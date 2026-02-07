@@ -72,15 +72,23 @@ int Lleveldb::hdel(lua_State* L) {
   Lleveldb* p = (Lleveldb*)luaL_checkudata(L, 1, LLEVELDB_META);
   leveldb::DB* db = p->db_;
 
+  int pnum = lua_gettop(L);
+  if (pnum < 3) {
+    return luaL_error(L, "leveldb hdel len arr");
+  }
+
   size_t lk;
   const char* pk = luaL_checklstring(L, 2, &lk);
-  size_t lhk;
-  const char* phk = luaL_checklstring(L, 3, &lhk);
   string key(pk, lk);
-  string hkey(phk, lhk);
-  key = key + split_ + hkey;
-
-  db->Delete(leveldb::WriteOptions(), key);
+  leveldb::WriteBatch batch;
+  for (int i = 3; i <= pnum; ++i) {
+    size_t lhk;
+    const char* phk = luaL_checklstring(L, i, &lhk);
+    string hkey(phk, lhk);
+    string rkey = key + split_ + hkey;
+    batch.Delete(rkey);
+  }
+  db->Write(leveldb::WriteOptions(), &batch);
   return 0;
 }
 
