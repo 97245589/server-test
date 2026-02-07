@@ -1,0 +1,13 @@
+include "config.path"
+
+debug_console_port = 10010
+cluster_port = 10011
+gate_port = 10012
+server_name = "game"
+server_id = 1
+server_mark = server_name .. server_id
+gametype = 1 --1local 2private 3public
+
+thread = 6
+--logger = "run/" .. server_mark .. ".log"
+--daemon = "run/" .. server_mark .. ".pid"

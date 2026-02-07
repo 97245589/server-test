@@ -1,0 +1,7 @@
+include "config.path"
+
+server_name = "test"
+server_mark = server_name
+test = "$TEST"
+
+thread = 2

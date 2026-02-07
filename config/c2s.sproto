@@ -1,0 +1,59 @@
+.package {
+    type 0 : integer
+    session 1 : integer
+}
+
+exchange 30000 {
+    request {
+        cpub 0 : string
+    }
+    response {
+        code 0 : integer
+        spub 1 : string
+    }
+}
+
+login_verify 30001 {
+    request {
+        verify 0: *string
+    }
+    response {
+        code 0 : integer
+    }
+}
+
+choose_gameserver 30002 {
+    request {
+        acc 0 : string
+        server 1 : string
+    }
+    response {
+        code 0 : integer
+        host 1 : string
+    }
+}
+
+verify 1 {
+    request {
+        acc 0 : string
+    }
+    response {
+        code 0 : integer
+    }
+}
+
+select_player 2 {
+    request {
+        playerid 1 : integer
+    }
+    response {
+        code 0 : integer
+    }
+}
+
+get_data 3 {
+    request {}
+    response {
+        code 0 : integer
+    }
+}
