@@ -42,17 +42,10 @@ M.get_brief_info = function(playerid)
     if info then
         return info
     end
-    local bin = db.call("hget", "pl" .. playerid, "role")
-    if bin then
-        return zstd.decode(bin)
-    end
 end
 
 M.save_player = function(player)
-    local attrs = player.attrs
-    player.attrs = nil
     -- db.send("hmset", "pl"..playerid, "data", zstd.encode(player), "role", zstd.encode(player.role))
-    player.attrs = attrs
 end
 
 return M

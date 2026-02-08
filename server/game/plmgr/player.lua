@@ -1,30 +1,44 @@
-local tostring   = tostring
-local tonumber   = tonumber
-local skynet     = require "skynet"
-local mgrs       = require "server.game.plmgr.mgrs"
-local db         = require "common.func.leveldb"
-local zstd       = require "common.func.zstd"
+local skynet = require "skynet"
+local mgrs = require "server.game.plmgr.mgrs"
+local db = require "common.func.leveldb"
+local zstd = require "common.func.zstd"
+local M = {}
 
-local gameid     = tonumber(skynet.getenv("server_id"))
+local gameid = tonumber(skynet.getenv("server_id"))
+local data
+M.init = function(dbdata)
+    data = dbdata
+    data.playeridx = data.playeridx or 1
+end
 
-local dbdata     = mgrs.dbdata
-dbdata.playeridx = dbdata.playeridx or 1
-
-local M          = {}
-
-M.gen_playerid   = function()
-    local id = gameid << 25 | dbdata.playeridx
-    dbdata.playeridx = dbdata.playeridx + 1
+M.gen_id = function()
+    local id = gameid << 25 | data.playeridx
+    data.playeridx = data.playeridx + 1
     return id
 end
 
-M.create_player  = function(acc)
-    local newplayerid = M.gen_playerid()
-    local player = {
-        role = { playerid = newplayerid, acc = acc }
+M.create_acc = function(acc)
+    local acckey = "acc" .. gameid
+    local acc_bin = db.call("hget", acckey, acc)
+    local acc_info = zstd.decode(acc_bin)
+
+    local newid = M.gen_id()
+    local role = {
+        playerid = newid,
+        acc = acc,
+        name = ""
     }
-    -- db.call("hmset", "pl" .. newplayerid, "data", zstd.encode(player))
-    return newplayerid
+    acc_info[newid] = role
+    local nplayer = {
+        role = {
+            playerid = newid,
+            acc = acc,
+            name = ""
+        }
+    }
+    db.send("hset", acckey, acc, zstd.encode(acc_info))
+    db.send("hset", "pl" .. newid, "data", zstd.encode(nplayer))
 end
 
+mgrs.add_mgr(M, "player")
 return M

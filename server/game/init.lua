@@ -10,6 +10,8 @@ skynet.start(function()
         cluster = 1,
         plmgr = 1,
         mapmgr = 1,
+        info = 1,
+        social = 1
     }
     local addrs = {}
 

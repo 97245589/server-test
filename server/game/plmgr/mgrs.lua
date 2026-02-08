@@ -1,30 +1,26 @@
-local skynet = require "skynet"
-local db     = require "common.func.leveldb"
-local zstd   = require "common.func.zstd"
+local pairs = pairs
+local inits = {}
+local ticks = {}
+local mgrs  = {}
 
-local gameid = skynet.getenv("server_id")
-local dbkey  = "game" .. gameid
-local dbfkey = "plmgr"
+local M     = {}
 
--- local dbdata = db.call("hget", dbkey, dbfkey)
-local dbdata = {}
-local ticks  = {}
+M.add_mgr   = function(mgr, name)
+    inits[name] = mgr.init
+    ticks[name] = mgr.tick
+    mgrs[name] = mgr
+end
 
-local M      = {}
-M.dbdata     = dbdata
-M.ticks      = ticks
-
-skynet.fork(function()
-    while true do
-        skynet.sleep(100)
-        local tm = os.time()
-        for _, func in pairs(ticks) do
-            func(tm)
-        end
-        if tm % 20 == 0 then
-            -- db.send("hmset", dbkey, dbfkey, zstd.encode(dbdata))
-        end
+M.all_init  = function(data)
+    for k, func in pairs(inits) do
+        func(data)
     end
-end)
+end
+
+M.all_tick  = function(tm)
+    for k, tick in pairs(ticks) do
+        tick(tm)
+    end
+end
 
 return M
