@@ -1,0 +1,122 @@
+require "common.func.tool"
+local random = math.random
+local skynet = require "skynet"
+
+local db = function()
+    local db = require "common.func.leveldb"
+
+    local t = skynet.now()
+    for i = 1, 100000 do
+        db.call("hmset", "test", "hello", "world")
+    end
+    print(skynet.now() - t, db.call("hget", "test", "hello"))
+end
+
+local zstd = function()
+    print("zstd test ===")
+    local zstd = require "common.func.zstd"
+    local sproto = require "sproto"
+
+    local sp = sproto.parse [[
+        .Map {
+            id 1 : integer
+            level 2 : integer
+            num 3 : integer
+            hello 4 : integer
+            world 5 : integer
+        }
+
+        .Obj {
+            map 1 : *Map(id)
+        }
+    ]]
+
+    local obj = {
+        map = {}
+    }
+    for i = 1, 5000 do
+        obj.map[i * 10] = {
+            id    = i * 10,
+            level = random(1000),
+            num   = random(10000),
+            hello = random(100000),
+            world = random(1000000)
+        }
+    end
+
+    local sbin, pbin, bin
+    local t = skynet.now()
+    for i = 1, 1000 do
+        sbin = sp:pencode("Obj", obj)
+    end
+    print(skynet.now() - t, #sbin)
+    skynet.sleep(1)
+    local t = skynet.now()
+    for i = 1, 1000 do
+        bin = zstd.encode(obj)
+    end
+    print(skynet.now() - t, #bin)
+end
+
+local lru = function()
+    print("lru test ===")
+    local lru = require "common.func.lru"
+
+    local obj = lru(5)
+    for i = 1, 5 do
+        obj[i] = i
+    end
+    local v = obj[2]
+    obj[2] = nil
+
+    for i = 6, 9 do
+        obj[i] = i
+    end
+
+    print(dump(obj))
+
+    local t = skynet.now()
+    for i = 1, 1000000 do
+        obj[i] = i
+    end
+    print(skynet.now() - t, dump(obj))
+end
+
+local rank = function()
+    print("rank test ===")
+    local lrank = require "lgame.rank"
+    local core = lrank.create(5)
+    for i = 1, 10 do
+        core:add(i, i * 10, 0)
+    end
+    print(dump(core:info(1, 3)))
+    print(core:get_order(1), core:get_order(10))
+
+    local core = lrank.create(1000)
+    local t = skynet.now()
+    for i = 1, 1000000 do
+        core:add(random(2000), random(20000), i)
+    end
+    print(skynet.now() - t)
+
+    local t = skynet.now()
+    local arr
+    for i = 1, 10000 do
+        arr = core:info(1, 1000)
+    end
+    print(skynet.now() - t, #arr)
+
+    local t = skynet.now()
+    local order = 0
+    for i = 1, 3000000 do
+        order = core:get_order(1000)
+    end
+    print(skynet.now() - t, order)
+end
+
+skynet.start(function()
+    -- db()
+    rank()
+    lru()
+    zstd()
+end)

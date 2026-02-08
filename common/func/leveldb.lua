@@ -4,7 +4,7 @@ local skynet = require "skynet"
 local mode = ...
 
 if mode == "child" then
-    -- {compact,keys,del,hgetall,hmget,hmset,hdel}
+    -- {compact,keys,del,hgetall,hget,hset,hmget,hmset,hdel}
     skynet.start(function()
         local server = skynet.getenv("server_mark")
         local db

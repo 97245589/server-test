@@ -256,7 +256,7 @@ int Lleveldb::gc(lua_State* L) {
 void Lleveldb::meta(lua_State* L) {
   if (luaL_newmetatable(L, LLEVELDB_META)) {
     luaL_Reg l[] = {{"del", del},     {"keys", keys},  {"hgetall", hgetall},
-                    {"hmset", hmset}, {"hset", hmset}, {"hget", hmget},
+                    {"hmset", hmset}, {"hset", hmset}, {"hget", hget},
                     {"hmget", hmget}, {"hdel", hdel},  {"compact", compact},
                     {NULL, NULL}};
     luaL_newlib(L, l);

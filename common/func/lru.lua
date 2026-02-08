@@ -25,7 +25,7 @@ return function(num)
             else
                 lru:del(k)
             end
-            tb[1][k] = v
+            tb.__INFO[k] = v
         end,
     })
     return obj
