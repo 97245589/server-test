@@ -44,18 +44,19 @@ local zstd = function()
         }
     end
 
-    local sbin, pbin, bin
+    local sbin, bin
     local t = skynet.now()
     for i = 1, 1000 do
         sbin = sp:pencode("Obj", obj)
     end
-    print(skynet.now() - t, #sbin)
+    print("sproto", skynet.now() - t, #sbin)
     skynet.sleep(1)
     local t = skynet.now()
     for i = 1, 1000 do
         bin = zstd.encode(obj)
     end
-    print(skynet.now() - t, #bin)
+    print("msgpack zstd", skynet.now() - t, #bin)
+    -- print(dump(zstd.decode(bin)))
 end
 
 local lru = function()
@@ -114,9 +115,37 @@ local rank = function()
     print(skynet.now() - t, order)
 end
 
+local msgpack = function()
+    local msgpack = require "lgame.msgpack"
+
+    local obj = {
+        obj = {
+            id = 10,
+            level = 10,
+            name = "hello"
+        },
+        arr = { 1, 2, 3 },
+        arr_obj = { { val = 10 }, { val = 20 } },
+        map = {
+            [100] = {
+                id = 100,
+                num = 100,
+            },
+            [200] = {
+                id = 200,
+                map = { [200] = 200 }
+            }
+        }
+    }
+    local bin = msgpack.encode(obj)
+    local nobj = msgpack.decode(bin)
+    print(dump(nobj))
+end
+
 skynet.start(function()
     -- db()
-    rank()
-    lru()
-    zstd()
+    -- rank()
+    -- lru()
+    -- zstd()
+    msgpack()
 end)

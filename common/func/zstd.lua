@@ -1,8 +1,6 @@
 local skynet = require "skynet"
 local zstd = require "lgame.zstd"
 
-local pack = skynet.packstring
-local unpack = skynet.unpack
 local compress = zstd.compress
 local decompress = zstd.decompress
 
@@ -12,11 +10,11 @@ M.compress = compress
 M.decompress = decompress
 
 M.encode = function(val)
-    return compress(pack(val))
+    return compress(skynet.packstring(val))
 end
 
 M.decode = function(bin)
-    return unpack(decompress(bin))
+    return skynet.unpack(decompress(bin))
 end
 
 return M
