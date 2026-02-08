@@ -7,11 +7,10 @@ skynet.start(function()
     local service_num = {
         player = 3,
         watchdog = 1,
+        watchdata = 2,
         cluster = 1,
         plmgr = 1,
         mapmgr = 1,
-        info = 1,
-        social = 1
     }
     local addrs = {}
 

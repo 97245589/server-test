@@ -3,6 +3,7 @@ local os = os
 local db = require "common.func.leveldb"
 local mgrs = require "server.game.player.mgr.mgrs"
 local zstd = require "common.func.zstd"
+local enums = require "server.game.player.enums"
 local rpc = require "server.game.rpc"
 
 local M = {}
@@ -11,7 +12,7 @@ local players = {}
 M.players = players
 
 local player_db = function(playerid)
-    -- local bin = db.call("hget", "pl" .. playerid, "data")
+    -- local bin = db.call("hget", enums.dbkey_player, playerid)
     if players[playerid] then
         return players[playerid]
     end
@@ -45,7 +46,8 @@ M.get_brief_info = function(playerid)
 end
 
 M.save_player = function(player)
-    -- db.send("hmset", "pl"..playerid, "data", zstd.encode(player), "role", zstd.encode(player.role))
+    -- db.send("hset", enums.dbkey_player, player.id, zstd.encode(player))
+    -- db.send("hset", enums.dbkey_role, player.id, zstd.encode(player.role))
 end
 
 return M

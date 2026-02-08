@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local mgrs = require "server.game.plmgr.mgrs"
 local db = require "common.func.leveldb"
 local zstd = require "common.func.zstd"
+local enums = require "server.game.player.enums"
 local M = {}
 
 local gameid = tonumber(skynet.getenv("server_id"))
@@ -18,9 +19,16 @@ M.gen_id = function()
 end
 
 M.create_acc = function(acc)
-    local acckey = "acc" .. gameid
-    local acc_bin = db.call("hget", acckey, acc)
-    local acc_info = zstd.decode(acc_bin)
+    local acc_bin = db.call("hget", enums.dbkey_acc, acc)
+    local acc_arr
+    if acc_bin then
+        acc_arr = zstd.decode(acc_bin)
+    else
+        acc_arr = {}
+    end
+    if #acc_arr > 3 then
+        return
+    end
 
     local newid = M.gen_id()
     local role = {
@@ -28,7 +36,6 @@ M.create_acc = function(acc)
         acc = acc,
         name = ""
     }
-    acc_info[newid] = role
     local nplayer = {
         role = {
             playerid = newid,
@@ -36,8 +43,10 @@ M.create_acc = function(acc)
             name = ""
         }
     }
-    db.send("hset", acckey, acc, zstd.encode(acc_info))
-    db.send("hset", "pl" .. newid, "data", zstd.encode(nplayer))
+    table.insert(acc_arr, newid)
+    db.send("hset", enums.dbkey_acc, acc, zstd.encode(acc_arr))
+    db.send("hset", enums.dbkey_player, newid, zstd.encode(nplayer))
+    db.send("hset", enums.dbkey_role, newid, zstd.encode(role))
 end
 
 mgrs.add_mgr(M, "player")

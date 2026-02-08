@@ -2,7 +2,6 @@ local require = require
 local print = print
 local skynet = require "skynet"
 local cmds = require "common.service.cmds"
-local child = require "server.game.watchdog.child"
 local rpc = require "server.game.rpc"
 
 local gate = skynet.newservice("gate")
@@ -75,7 +74,7 @@ local socket_cmds = {
     end,
     data = function(fd, msg)
         local acc = fd_acc[fd]
-        child.data(fd, msg, acc)
+        rpc.send_id("watchdata", "data", fd, msg, acc)
     end
 }
 cmds.socket = function(cmd, ...)
