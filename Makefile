@@ -1,5 +1,5 @@
 SKYNET = skynet/skynet
-LUACLIB = luaclib/lkcp.so
+LUACLIB = luaclib/dummy
 
 all : $(SKYNET) $(LUACLIB)
 

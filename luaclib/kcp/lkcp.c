@@ -1,41 +1,27 @@
-#include "ikcp.h"
-extern "C" {
 #include <string.h>
 
+#include "ikcp.h"
 #include "lauxlib.h"
-#include "lua.h"
 #include "skynet.h"
 #include "skynet_socket.h"
-}
 
 static const char* META = "LKCP";
-struct Lkcp {
+#define _addrlen 20
+typedef struct Lkcp {
   ikcpcb* pkcp;
-  skynet_context* ctx;
+  struct skynet_context* ctx;
   int host;
   int conv;
-  char address[20];
+  char address[_addrlen];
+} Lkcp;
 
-  static int recv(lua_State* L);
-  static int send(lua_State* L);
-  static int update(lua_State* L);
-
-  static int gc(lua_State* L);
-  static void meta(lua_State* L);
-  static int servercb(const char* buf, int len, ikcpcb* kcp, void* user);
-  static int server(lua_State* L);
-
-  static int client(lua_State* L);
-  static int clientcb(const char* buf, int len, ikcpcb* kcp, void* user);
-};
-
-int Lkcp::gc(lua_State* L) {
+static int gc(lua_State* L) {
   Lkcp* p = (Lkcp*)luaL_checkudata(L, 1, META);
   ikcp_release(p->pkcp);
   return 0;
 }
 
-int Lkcp::send(lua_State* L) {
+static int send(lua_State* L) {
   Lkcp* p = (Lkcp*)luaL_checkudata(L, 1, META);
   size_t len = 0;
   const char* pstr = luaL_checklstring(L, 2, &len);
@@ -43,14 +29,14 @@ int Lkcp::send(lua_State* L) {
   return 0;
 }
 
-int Lkcp::update(lua_State* L) {
+static int update(lua_State* L) {
   Lkcp* p = (Lkcp*)luaL_checkudata(L, 1, META);
   int64_t i = luaL_checkinteger(L, 2);
   ikcp_update(p->pkcp, i * 10);
   return 0;
 }
 
-int Lkcp::recv(lua_State* L) {
+static int recv(lua_State* L) {
   Lkcp* p = (Lkcp*)luaL_checkudata(L, 1, META);
 
   size_t slen = 0;
@@ -62,14 +48,14 @@ int Lkcp::recv(lua_State* L) {
   if (len > 0) {
     lua_pushlstring(L, buf, len);
     return 1;
-  } else if(len == -3) {
+  } else if (len == -3) {
     return luaL_error(L, "kcp buf size more than 100k");
   } else {
     return 0;
   }
 }
 
-void Lkcp::meta(lua_State* L) {
+static void meta(lua_State* L) {
   if (luaL_newmetatable(L, META)) {
     luaL_Reg l[] = {
         {"send", send}, {"update", update}, {"recv", recv}, {NULL, NULL}};
@@ -81,9 +67,9 @@ void Lkcp::meta(lua_State* L) {
   lua_setmetatable(L, -2);
 }
 
-int Lkcp::servercb(const char* buf, int len, ikcpcb* kcp, void* user) {
+static int servercb(const char* buf, int len, ikcpcb* kcp, void* user) {
   Lkcp* p = (Lkcp*)user;
-  socket_sendbuffer sbuf;
+  struct socket_sendbuffer sbuf;
   sbuf.id = p->host;
   sbuf.type = SOCKET_BUFFER_RAWPOINTER;
   sbuf.buffer = buf;
@@ -92,9 +78,9 @@ int Lkcp::servercb(const char* buf, int len, ikcpcb* kcp, void* user) {
   return 0;
 }
 
-int Lkcp::server(lua_State* L) {
+static int server(lua_State* L) {
   lua_getfield(L, LUA_REGISTRYINDEX, "skynet_context");
-  skynet_context* ctx = (skynet_context*)lua_touserdata(L, -1);
+  struct skynet_context* ctx = (struct skynet_context*)lua_touserdata(L, -1);
   if (ctx == NULL) {
     return luaL_error(L, "Init skynet context first");
   }
@@ -102,7 +88,7 @@ int Lkcp::server(lua_State* L) {
   int host = luaL_checkinteger(L, 2);
   size_t addrlen;
   const char* paddr = luaL_checklstring(L, 3, &addrlen);
-  if (addrlen >= sizeof(Lkcp::address)) {
+  if (addrlen >= _addrlen) {
     return luaL_error(L, "kcp address len error");
   }
 
@@ -119,9 +105,9 @@ int Lkcp::server(lua_State* L) {
   return 1;
 }
 
-int Lkcp::clientcb(const char* buf, int len, ikcpcb* kcp, void* user) {
+static int clientcb(const char* buf, int len, ikcpcb* kcp, void* user) {
   Lkcp* p = (Lkcp*)user;
-  socket_sendbuffer sbuf;
+  struct socket_sendbuffer sbuf;
   sbuf.id = p->host;
   sbuf.type = SOCKET_BUFFER_RAWPOINTER;
   sbuf.buffer = buf;
@@ -130,9 +116,9 @@ int Lkcp::clientcb(const char* buf, int len, ikcpcb* kcp, void* user) {
   return 0;
 }
 
-int Lkcp::client(lua_State* L) {
+static int client(lua_State* L) {
   lua_getfield(L, LUA_REGISTRYINDEX, "skynet_context");
-  skynet_context* ctx = (skynet_context*)lua_touserdata(L, -1);
+  struct skynet_context* ctx = (struct skynet_context*)lua_touserdata(L, -1);
   if (ctx == NULL) {
     return luaL_error(L, "Init skynet context first");
   }
@@ -150,11 +136,8 @@ int Lkcp::client(lua_State* L) {
   return 1;
 }
 
-extern "C" {
-LUAMOD_API int luaopen_lgame_kcp(lua_State* L) {
-  luaL_Reg l[] = {
-      {"server", Lkcp::server}, {"client", Lkcp::client}, {NULL, NULL}};
+LUAMOD_API int luaopen_kcp(lua_State* L) {
+  luaL_Reg l[] = {{"client", client}, {"server", server}, {NULL, NULL}};
   luaL_newlib(L, l);
   return 1;
-}
 }
