@@ -1,16 +1,27 @@
 3RDPATH = ../3rd
-3RDFLAG := -I$(3RDPATH) -L$(3RDPATH) -Wl,-rpath,$(3RDPATH):3rd
-COMMON_FLAGS := -O2 -fPIC -shared -I../skynet/3rd/lua -I../skynet/skynet-src
+SKYNETPATH = ../skynet/skynet-src
+3RDFLAG := -L$(3RDPATH) -Wl,-rpath,$(3RDPATH):3rd
+COMMON_FLAGS := -O2 -fPIC -I../skynet/3rd/lua
+CXX_FLAGS := $(COMMON_FLAGS) -std=c++17
 
 all : lgame.so pb.so
 
 GAME_SRCS := $(shell find ./game -name "*.cc")
-lgame.so : $(GAME_SRCS)
-	g++ -o $@ $^ $(COMMON_FLAGS) $(3RDFLAG) -std=c++17 -lzstd -lleveldb
+GAME_OES := $(GAME_SRCS:.cc=.o)
+lgame.so : $(GAME_OES)
+	g++ -o $@ $^ -shared $(3RDFLAG) -lzstd -lleveldb
+
+%.o : %.cc
+	g++ -o $@ -c $< $(CXX_FLAGS) -I$(3RDPATH) -I$(SKYNETPATH)
 
 pb.so : pb/pb.c
-	gcc -o $@ $^ $(COMMON_FLAGS)
+	gcc -o $@ $^ -shared $(COMMON_FLAGS)
 
 .PHONY : clean
-clean:
-	find . -type f \( -name "*.o" -o -name "*.so" \) | xargs rm -f
+cleano:
+	find . -type f -name "*.o" | xargs rm -f
+
+cleanso:
+	find . -type f -name "*.so" | xargs rm -f
+	
+clean: cleano cleanso

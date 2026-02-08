@@ -55,7 +55,7 @@ local zstd = function()
     for i = 1, 1000 do
         bin = zstd.encode(obj)
     end
-    print("msgpack zstd", skynet.now() - t, #bin)
+    print("zstd", skynet.now() - t, #bin)
     -- print(dump(zstd.decode(bin)))
 end
 
@@ -142,10 +142,29 @@ local msgpack = function()
     print(dump(nobj))
 end
 
+local trie = function()
+    local trie = require "lgame.trie"
+    local core = trie.create()
+
+    for i = 1, 10 do
+        core:insert(i, i)
+    end
+    core:erase(5)
+    print(core:val(5), core:val(10))
+
+    local bin = core:seri()
+    local ncore = trie.create()
+    ncore:deseri(bin)
+    for i = 1, 10 do
+        print(i, ncore:val(i))
+    end
+end
+
 skynet.start(function()
     -- db()
     -- rank()
     -- lru()
-    -- zstd()
-    msgpack()
+    zstd()
+    -- msgpack()
+    -- trie()
 end)
