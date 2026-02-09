@@ -28,9 +28,9 @@ skynet.start(function()
         conn({
             acc = "acc" .. i,
             playerid = i,
-            serverid = 1,
             gamehost = "127.0.0.1:10012",
-            loginhost = "127.0.0.1:10031"
+            -- serverid = 1,
+            -- loginhost = "127.0.0.1:10031"
         })
     end
 end)

@@ -43,7 +43,9 @@ local login = function(args)
     local serverid = args.serverid
     local gamehost = args.gamehost
     local loginhost = args.loginhost
-    local login_server = function()
+
+    local secret = "12345678"
+    if loginhost then
         print("conn login server")
         local fd = socket.open(loginhost)
         local cpri = crypt.randomkey()
@@ -53,7 +55,7 @@ local login = function(args)
         })
         local _, _, res = recv_data(fd)
         local spub = res.spub
-        local secret = crypt.dhsecret(spub, cpri)
+        secret = crypt.dhsecret(spub, cpri)
         print("exchange succ get secret", secret)
 
         request(fd, "login_verify", {
@@ -67,10 +69,8 @@ local login = function(args)
         recv_data(fd)
         socket.close(fd)
         skynet.sleep(10)
-        return secret
     end
 
-    local secret = login_server()
     local game_server = function()
         print("conn game server")
         local fd = socket.open(gamehost)
