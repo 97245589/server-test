@@ -4,7 +4,7 @@ local tostring = tostring
 local print = print
 local dump = dump
 local skynet = require "skynet"
-local client = require "server.test.client.create"
+local client = require "server.test.func.client"
 
 local login = client.login
 local recv_data = client.recv_data
@@ -28,7 +28,9 @@ skynet.start(function()
         conn({
             acc = "acc" .. i,
             playerid = i,
-            host = "127.0.0.1:10012"
+            serverid = 1,
+            gamehost = "127.0.0.1:10012",
+            loginhost = "127.0.0.1:10031"
         })
     end
 end)

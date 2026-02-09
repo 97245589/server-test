@@ -15,16 +15,16 @@ exchange 30000 {
 
 login_verify 30001 {
     request {
-        verify 0: *string
+        acc 0 : string
+        acctoken 1 : string
     }
     response {
         code 0 : integer
     }
 }
 
-choose_gameserver 30002 {
+select_gameserver 30002 {
     request {
-        acc 0 : string
         serverid 1 : integer
     }
     response {
@@ -35,6 +35,7 @@ choose_gameserver 30002 {
 verify 1 {
     request {
         acc 0 : string
+        acctoken 1 : string
     }
     response {
         code 0 : integer

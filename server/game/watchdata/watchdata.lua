@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local cmds = require "common.service.cmds"
 local rpc = require "server.game.rpc"
 local socket = require "skynet.socket"
+local crypt = require "skynet.crypt"
 
 local gametype = tonumber(skynet.getenv("gametype"))
 local proto = require "common.func.proto"
@@ -14,9 +15,20 @@ end
 local handle = {
     verify = function(args, _, fd)
         local acc = args.acc
+        if not acc then
+            return
+        end
         if gametype ~= 1 then
-            local key = rpc.call("watchdog", "get_key", acc)
-            if not key then
+            local acctoken = args.acctoken
+            if not acctoken then
+                return
+            end
+            local secret = rpc.call("watchdog", "get_secret", acc)
+            -- print(acc, acctoken, secret)
+            if not secret then
+                return
+            end
+            if acctoken ~= crypt.desencode(secret, acc) then
                 return
             end
         end

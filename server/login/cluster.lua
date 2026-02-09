@@ -1,11 +1,7 @@
-local require = require
-local pairs = pairs
-local string = string
-local cluster = require "skynet.cluster"
 local start = require "common.service.start"
 
+--[[
 local gameserver_publichost = {}
-
 local cluster_diff_func = function(diff)
     local upd = diff.upd
     if upd then
@@ -27,11 +23,11 @@ local cluster_diff_func = function(diff)
         end
     end
 
-    print("diff", dump(diff))
     print("gameserver_publichost", dump(gameserver_publichost))
 end
+scluster.set_diff_func(cluster_diff_func)
+]]
 
 start(function()
-    local scluster = require "common.service.cluster"
-    scluster.set_diff_func(cluster_diff_func)
+    require "common.service.cluster"
 end)

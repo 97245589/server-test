@@ -13,13 +13,13 @@ skynet.call(gate, "lua", "open", {
     nodelay = true
 })
 
-local acc_key = {}
+local acc_secret = {}
 local acc_fd = {}
 local fd_acc = {}
 local close_conn = function(fd)
     local acc = fd_acc[fd]
     if acc then
-        acc_key[acc] = nil
+        acc_secret[acc] = nil
         acc_fd[acc] = nil
         fd_acc[fd] = nil
     end
@@ -27,8 +27,9 @@ local close_conn = function(fd)
     skynet.send(gate, "lua", "kick", fd)
 end
 
-cmds.acc_key = function(acc, key)
-    acc_key[acc] = key
+cmds.acc_secret = function(acc, secret)
+    -- print("set acc secret", acc, secret)
+    acc_secret[acc] = secret
 end
 
 cmds.kick_acc = function(acc)
@@ -38,8 +39,9 @@ cmds.kick_acc = function(acc)
     end
 end
 
-cmds.get_key = function(acc)
-    return acc_key[acc]
+cmds.get_secret = function(acc)
+    -- print("get acc secret", acc, acc_secret[acc])
+    return acc_secret[acc]
 end
 
 cmds.fd_acc = function(fd, acc)

@@ -40,13 +40,15 @@ if mode == "child" then
 
     local verify = function(fd, secret)
         local _, name, args, res = get_req(fd)
-        local acc, token = args.acc, args.token
-        if name ~= "login_verify" or not acc or not token then
+        local acc, acctoken = args.acc, args.acctoken
+        if name ~= "login_verify" or not acc or not acctoken then
             return
         end
 
-        acc = crypt.desdecode(secret, acc)
-        token = crypt.desdecode(secret, token)
+        if crypt.desencode(secret, acc) ~= acctoken then
+            print("login verity err", acc)
+            return
+        end
 
         send_package(fd, res({
             code = 0
@@ -54,16 +56,16 @@ if mode == "child" then
         return acc
     end
 
-    local choose_gameserver = function(fd, secret, acc)
+    local select_gameserver = function(fd, secret, acc)
         local _, name, args, res = get_req(fd)
         local serverid = args.serverid
-        if name ~= "choose_gameserver" or not serverid then
+        if name ~= "select_gameserver" or not serverid then
             return
         end
 
         local server = "game" .. serverid
-        cluster.send(server, "watchdog", "acc_key", acc, secret)
         skynet.send(loginaddr, "lua", "acc_gameserver", acc, server)
+        cluster.send(server, "watchdog", "acc_secret", acc, secret)
         send_package(fd, res({
             code = 0,
         }))
@@ -85,7 +87,7 @@ if mode == "child" then
             return
         end
 
-        if not choose_gameserver(fd, secret, acc) then
+        if not select_gameserver(fd, secret, acc) then
             return
         end
     end
