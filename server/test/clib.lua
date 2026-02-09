@@ -2,16 +2,6 @@ require "common.func.tool"
 local random = math.random
 local skynet = require "skynet"
 
-local db = function()
-    local db = require "common.func.leveldb"
-
-    local t = skynet.now()
-    for i = 1, 100000 do
-        db.call("hmset", "test", "hello", "world")
-    end
-    print(skynet.now() - t, db.call("hget", "test", "hello"))
-end
-
 local zstd = function()
     print("zstd test ===")
     local zstd = require "common.func.zstd"
@@ -183,7 +173,6 @@ end
 
 skynet.start(function()
     crc()
-    -- db()
     -- rank()
     -- lru()
     -- zstd()

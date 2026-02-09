@@ -28,6 +28,7 @@ struct Lleveldb {
   static int hmset(lua_State* L);
   static int hget(lua_State* L);
   static int hmget(lua_State* L);
+  static int hkeys(lua_State* L);
   static int hgetall(lua_State* L);
   static int hdel(lua_State* L);
   static int compact(lua_State* L);
@@ -169,6 +170,24 @@ int Lleveldb::del(lua_State* L) {
   return 0;
 }
 
+int Lleveldb::hkeys(lua_State* L) {
+  Lleveldb* p = (Lleveldb*)luaL_checkudata(L, 1, LLEVELDB_META);
+  leveldb::DB* db = p->db_;
+
+  size_t len;
+  const char* ps = luaL_checklstring(L, 2, &len);
+  string str(ps, len);
+  lua_createtable(L, 0, 0);
+  int i = 0;
+  search_key(db, str,
+             [&](const string& key, const string& val, const string& realkey) {
+               lua_pushlstring(L, key.c_str(), key.size());
+               lua_rawseti(L, -2, ++i);
+             });
+
+  return 1;
+}
+
 int Lleveldb::hgetall(lua_State* L) {
   Lleveldb* p = (Lleveldb*)luaL_checkudata(L, 1, LLEVELDB_META);
   leveldb::DB* db = p->db_;
@@ -255,10 +274,10 @@ int Lleveldb::gc(lua_State* L) {
 
 void Lleveldb::meta(lua_State* L) {
   if (luaL_newmetatable(L, LLEVELDB_META)) {
-    luaL_Reg l[] = {{"del", del},     {"keys", keys},  {"hgetall", hgetall},
-                    {"hmset", hmset}, {"hset", hmset}, {"hget", hget},
-                    {"hmget", hmget}, {"hdel", hdel},  {"compact", compact},
-                    {NULL, NULL}};
+    luaL_Reg l[] = {{"del", del},         {"keys", keys},   {"hkeys", hkeys},
+                    {"hgetall", hgetall}, {"hmset", hmset}, {"hset", hmset},
+                    {"hget", hget},       {"hmget", hmget}, {"hdel", hdel},
+                    {"compact", compact}, {NULL, NULL}};
     luaL_newlib(L, l);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, gc);

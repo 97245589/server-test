@@ -6,11 +6,12 @@ local fip = require "common.func.ip"
 local cmds = require "common.service.cmds"
 
 start(function()
+    require "server.game.rpc"
     local gametype = tonumber(skynet.getenv("gametype"))
     if gametype == 1 then
         return
     end
-    skynet.timeout(50, function()
+    skynet.timeout(0, function()
         local ip
         require "common.service.cluster"
         if gametype == 2 then

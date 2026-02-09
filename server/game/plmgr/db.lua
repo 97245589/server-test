@@ -21,19 +21,24 @@ local save = function()
     db.send("hset", dbkey, dbfkey, bin)
 end
 
-skynet.fork(function()
-    while true do
-        skynet.sleep(100)
-        local t = os.time()
-        mgrs.all_tick(t)
-        -- if t % 20 == 0 then
-        --     save()
-        -- end
-    end
-end)
 
-return {
-    get_dbdata = function()
-        return dbdata
-    end
-}
+local M = {}
+
+M.get_dbdata = function()
+    return dbdata
+end
+
+M.start_tick = function()
+    skynet.fork(function()
+        while true do
+            skynet.sleep(100)
+            local t = os.time()
+            mgrs.all_tick(t)
+            -- if t % 20 == 0 then
+            --     save()
+            -- end
+        end
+    end)
+end
+
+return M
