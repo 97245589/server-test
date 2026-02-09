@@ -5,6 +5,7 @@ extern "C" {
 #include <string>
 
 #include "tsl/htrie_map.h"
+#include "zstdwrap.h"
 using namespace std;
 
 using trie_map = tsl::htrie_map<char, int64_t>;
@@ -26,9 +27,10 @@ int Ltriemap::deseri(lua_State* L) {
   trie_map& tmap = **pp;
   size_t slen;
   const char* pstr = luaL_checklstring(L, 2, &slen);
+  string cont = Zstdwrap::decompress(pstr, slen);
 
-  const char* pstart = pstr;
-  const char* pend = pstr + slen;
+  const char* pstart = cont.data();
+  const char* pend = pstart + cont.size();
   while (pstart < pend) {
     uint32_t keysize = *(uint32_t*)pstart;
     pstart += sizeof(keysize);
@@ -54,7 +56,8 @@ int Ltriemap::seri(lua_State* L) {
     str.append(key.data(), key.size());
     str.append((const char*)&val, sizeof(val));
   }
-  lua_pushlstring(L, str.data(), str.size());
+  string bin = Zstdwrap::compress(str.data(), str.size());
+  lua_pushlstring(L, bin.data(), bin.size());
   return 1;
 }
 

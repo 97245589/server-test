@@ -108,6 +108,7 @@ end
 local msgpack = function()
     print("msgpack test")
     local msgpack = require "lgame.msgpack"
+    local zstd = require "common.func.zstd"
 
     local obj = {
         obj = {
@@ -133,6 +134,12 @@ local msgpack = function()
     local bin = msgpack.encode(obj)
     local nobj = msgpack.decode(bin)
     print(dump(nobj))
+
+    print("zstd obj =====")
+    local zbin = zstd.encode(obj)
+    local zobj = zstd.decode(zbin)
+    print(#bin, #zbin)
+    print(dump(zobj))
 end
 
 local trie = function()
@@ -147,6 +154,7 @@ local trie = function()
     print(core:val(5), core:val(10))
 
     local bin = core:seri()
+    print(#bin)
     local ncore = trie.create()
     ncore:deseri(bin)
     for i = 1, 10 do
@@ -180,7 +188,7 @@ skynet.start(function()
     -- crc()
     -- rank()
     -- lru()
-    -- zstd()
     msgpack()
-    -- trie()
+    trie()
+    zstd()
 end)

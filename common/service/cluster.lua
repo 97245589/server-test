@@ -49,6 +49,8 @@ if server_mark ~= "center" then
 
         server_host.center = nil
         server_host[server_mark] = nil
+        ret.center = nil
+        ret[server_mark] = nil
         local diffobj = diff(server_host, ret)
         server_host = ret
 
