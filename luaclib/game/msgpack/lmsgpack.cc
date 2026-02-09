@@ -12,7 +12,7 @@ template <typename T>
 static void parselen(const char*& p, T& v) {
   v = *(T*)p;
   p += sizeof(T);
-  v = endian_change(v);
+  v = Msgpack::endian_change(v);
 }
 void Unpack::unpack(const char*& p) {
   uint8_t m;

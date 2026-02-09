@@ -121,9 +121,11 @@ local msgpack = function()
             [100] = {
                 id = 100,
                 num = 100,
+                arr = { 10, 30, { hello = "world" } }
             },
             [200] = {
                 id = 200,
+                obj = { val = 200 },
                 map = { [200] = 200 }
             }
         }
@@ -178,7 +180,7 @@ skynet.start(function()
     -- crc()
     -- rank()
     -- lru()
-    zstd()
-    -- msgpack()
+    -- zstd()
+    msgpack()
     -- trie()
 end)
