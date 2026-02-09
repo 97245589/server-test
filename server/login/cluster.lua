@@ -3,45 +3,32 @@ local pairs = pairs
 local string = string
 local cluster = require "skynet.cluster"
 local start = require "common.service.start"
-local cmds = require "common.service.cmds"
 
-local gameserver_info = {}
+local gameserver_publichost = {}
 
-cmds.acc_key = function(server, acc, key)
-    local info = gameserver_info[server]
-    if not info then
-        return
-    end
-    cluster.call(server, info.watchdog, "acc_key", acc, key)
-    return info.host
-end
-
-cmds.kick_acc = function(server, acc)
-    local info = gameserver_info[server]
-    if not info then
-        return
-    end
-    cluster.send(server, info.watchdog, "kick_acc", acc)
-end
-
-local cluster_diff_func = function(server_host)
-    for server in pairs(gameserver_info) do
-        if not server_host[server] then
-            gameserver_info[server] = nil
+local cluster_diff_func = function(diff)
+    local upd = diff.upd
+    if upd then
+        for server in pairs(upd) do
+            local servertype = string.sub(server, 1, 2)
+            if servertype == "ga" then
+                local serverhost = cluster.call(server, "@" .. server, "public_host")
+                gameserver_publichost[server] = serverhost
+            end
         end
     end
-    for server in pairs(server_host) do
-        local stype = string.sub(server, 1, 4)
-        if stype ~= "game" then
-            goto cont
+    local del = diff.del
+    if del then
+        for server in pairs(del) do
+            local servertype = string.sub(server, 1, 2)
+            if servertype == "ga" then
+                gameserver_publichost[server] = nil
+            end
         end
-        if not gameserver_info[server] then
-            local info = cluster.call(server, "@" .. server, "gameserver_info")
-            gameserver_info[server] = info
-        end
-        ::cont::
     end
-    print("gameserver_info", dump(gameserver_info))
+
+    print("diff", dump(diff))
+    print("gameserver_publichost", dump(gameserver_publichost))
 end
 
 start(function()

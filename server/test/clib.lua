@@ -160,11 +160,33 @@ local trie = function()
     end
 end
 
+local crc = function()
+    local luacrc = require "skynet.db.redis.crc16"
+    local ccrc = require "lgame.tool".crc16
+
+    local str = "watchdata" .. 100
+    local val = luacrc(str)
+    print(val, val == ccrc(str))
+
+    local t = skynet.now()
+    for i = 1, 1000000 do
+        val = luacrc(str)
+    end
+    print(skynet.now() - t)
+
+    local t = skynet.now()
+    for i = 1, 1000000 do
+        val = ccrc(str)
+    end
+    print(skynet.now() - t)
+end
+
 skynet.start(function()
+    crc()
     -- db()
     -- rank()
     -- lru()
-    zstd()
+    -- zstd()
     -- msgpack()
     -- trie()
 end)

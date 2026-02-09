@@ -2,7 +2,7 @@ local type = type
 local require = require
 local skynet = require "skynet"
 local cmds = require "common.service.cmds"
-local crc16 = require "skynet.db.redis.crc16"
+local crc16 = require "lgame.tool".crc16
 
 local M = {}
 local addrs = {}

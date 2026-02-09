@@ -25,11 +25,10 @@ login_verify 30001 {
 choose_gameserver 30002 {
     request {
         acc 0 : string
-        server 1 : string
+        serverid 1 : integer
     }
     response {
         code 0 : integer
-        host 1 : string
     }
 }
 

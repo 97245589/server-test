@@ -1,9 +1,11 @@
 local require = require
 local print = print
 local skynet = require "skynet"
+require "skynet.manager"
 local cmds = require "common.service.cmds"
 local rpc = require "server.game.rpc"
 
+skynet.register("watchdog")
 local gate = skynet.newservice("gate")
 skynet.call(gate, "lua", "open", {
     port = skynet.getenv("gate_port"),
