@@ -1,6 +1,6 @@
 local skynet = require "skynet"
 local socket = require "skynet.socket"
-local kcp = require "kcp"
+local kcp = require "lgame.kcp"
 
 local child = ...
 if child then

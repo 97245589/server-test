@@ -106,6 +106,7 @@ local rank = function()
 end
 
 local msgpack = function()
+    print("msgpack test")
     local msgpack = require "lgame.msgpack"
 
     local obj = {
@@ -133,6 +134,7 @@ local msgpack = function()
 end
 
 local trie = function()
+    print("trie test")
     local trie = require "lgame.trie"
     local core = trie.create()
 
@@ -151,6 +153,7 @@ local trie = function()
 end
 
 local crc = function()
+    print("crc test")
     local luacrc = require "skynet.db.redis.crc16"
     local ccrc = require "lgame.tool".crc16
 
@@ -172,10 +175,10 @@ local crc = function()
 end
 
 skynet.start(function()
-    crc()
+    -- crc()
     -- rank()
     -- lru()
-    -- zstd()
+    zstd()
     -- msgpack()
     -- trie()
 end)

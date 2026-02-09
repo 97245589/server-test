@@ -136,7 +136,7 @@ static int client(lua_State* L) {
   return 1;
 }
 
-LUAMOD_API int luaopen_kcp(lua_State* L) {
+LUAMOD_API int luaopen_lgame_kcp(lua_State* L) {
   luaL_Reg l[] = {{"client", client}, {"server", server}, {NULL, NULL}};
   luaL_newlib(L, l);
   return 1;

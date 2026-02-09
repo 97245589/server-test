@@ -1,6 +1,4 @@
-extern "C" {
 #include <stdlib.h>
-
 #include "lauxlib.h"
 #include "zstd.h"
 
@@ -35,5 +33,4 @@ LUAMOD_API int luaopen_lgame_zstd(lua_State* L) {
       {"compress", compress}, {"decompress", decompress}, {NULL, NULL}};
   luaL_newlib(L, funcs);
   return 1;
-}
 }
