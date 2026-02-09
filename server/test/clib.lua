@@ -2,7 +2,7 @@ require "common.func.tool"
 local random = math.random
 local skynet = require "skynet"
 
-local zstd = function()
+local zstd_press = function()
     print("zstd test ===")
     local zstd = require "common.func.zstd"
     local sproto = require "sproto"
@@ -34,15 +34,16 @@ local zstd = function()
         }
     end
 
+    local n = 300
     local sbin, bin
     local t = skynet.now()
-    for i = 1, 1000 do
+    for i = 1, n do
         sbin = sp:pencode("Obj", obj)
     end
     print("sproto", skynet.now() - t, #sbin)
     skynet.sleep(1)
     local t = skynet.now()
-    for i = 1, 1000 do
+    for i = 1, n do
         bin = zstd.encode(obj)
     end
     print("zstd", skynet.now() - t, #bin)
@@ -109,6 +110,8 @@ local msgpack = function()
     print("msgpack test")
     local msgpack = require "lgame.msgpack"
     local zstd = require "common.func.zstd"
+
+    print("zstd illegal", #zstd.decompress("test"))
 
     local obj = {
         obj = {
@@ -189,6 +192,6 @@ skynet.start(function()
     -- rank()
     -- lru()
     msgpack()
-    trie()
-    zstd()
+    -- trie()
+    zstd_press()
 end)
