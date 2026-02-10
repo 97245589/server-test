@@ -17,7 +17,7 @@ local save_kick = function(tm)
         end
     end
 
-    for i = 1, 3 do
+    for i = 1, 6 do
         if not next(playerids) then
             return
         end

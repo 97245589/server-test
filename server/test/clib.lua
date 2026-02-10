@@ -37,6 +37,7 @@ local encode_press = function()
 
     local n = 1000
     local bin
+    skynet.sleep(1)
     local t = skynet.now()
     for i = 1, n do
         bin = sp:pencode("Obj", obj)
@@ -62,7 +63,13 @@ local encode_press = function()
     for i = 1, n do
         cbin = zstd.compress(bin)
     end
-    print(skynet.now() - t, #cbin)
+    print("compress", skynet.now() - t, #cbin)
+
+    local t = skynet.now()
+    for i = 1, n do
+        skynet.packstring(bin)
+    end
+    print("packstr", skynet.now() - t)
 end
 
 local lru = function()
