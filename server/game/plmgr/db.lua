@@ -1,5 +1,4 @@
 local skynet = require "skynet"
-local mgrs = require "server.game.plmgr.mgrs"
 local db = require "common.func.leveldb"
 local zstd = require "common.func.zstd"
 
@@ -33,7 +32,6 @@ M.start_tick = function()
         while true do
             skynet.sleep(100)
             local t = os.time()
-            mgrs.all_tick(t)
             -- if t % 20 == 0 then
             --     save()
             -- end

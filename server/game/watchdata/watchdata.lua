@@ -54,6 +54,7 @@ local handle = {
 }
 
 local req = function(fd, msg, acc)
+    -- print("watchdata req", fd, msg, acc)
     local t, name, args, res = host:dispatch(msg)
     if not name then
         return

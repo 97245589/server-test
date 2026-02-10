@@ -75,9 +75,8 @@ local handle_req = function(fd, cmd, args, res)
     local player = player_mgr.get_player(playerid)
 
     local func = req[cmd]
-    local ret = func(player, args) or {
-        code = -1
-    }
+    local ret = func(player, args)
+    ret = ret or { code = -1 }
     return res(ret)
 end
 skynet.register_protocol({

@@ -6,7 +6,6 @@ local os = os
 local skynet = require "skynet"
 local player_mgr = require "server.game.player.player_mgr"
 local client = require "server.game.player.client"
-local mgrs = require "server.game.player.mgr.mgrs"
 
 local players = player_mgr.players
 local playerids = {}
@@ -36,10 +35,5 @@ skynet.fork(function()
         skynet.sleep(100)
         local tm = os.time()
         save_kick(tm)
-        for playerid, player in pairs(players) do
-            if player.role.online then
-                mgrs.all_tick(player, tm)
-            end
-        end
     end
 end)

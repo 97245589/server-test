@@ -25,12 +25,12 @@ M.add_mgr = function(mgr, name, init_level)
         inits[init_level][name] = mgr.init
     end
 
-    ticks[name] = mgr.tick
-
     if mgr.cfg then
         cfgs[name] = mgr.cfg
         cfg.cfg_func(name, mgr.cfg)
     end
+
+    ticks[name] = mgr.tick
 end
 
 M.all_init = function(player)

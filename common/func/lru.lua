@@ -1,5 +1,3 @@
-local setmetatable = setmetatable
-local require = require
 local llru = require "lgame.lru"
 
 return function(num)

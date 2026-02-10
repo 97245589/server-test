@@ -9,6 +9,7 @@ local start = function(func)
         skynet.dispatch("lua", function(_, _, cmd, ...)
             local f = cmds[cmd]
             if f then
+                -- local ret = profile("cmd" .. cmd, f, ...)
                 skynet.retpack(f(...))
             else
                 print("cmd err", SERVICE_NAME, cmd)

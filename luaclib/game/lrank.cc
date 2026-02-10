@@ -7,12 +7,13 @@ extern "C" {
 #include <ext/pb_ds/tree_policy.hpp>
 #include <string>
 #include <unordered_map>
+
+#include "zstdwrap.h"
 using namespace std;
 
 struct Rank {
-  using idtype = int64_t;
   struct Rankele {
-    idtype id_;
+    int64_t id_;
     int64_t score_;
     int64_t tm_;
 
@@ -50,7 +51,7 @@ struct Rank {
     ranks_.erase(lastit);
   }
 
-  int32_t get_order(const idtype& id) {
+  int32_t get_order(const int64_t id) {
     auto it = id_it_.find(id);
     if (it == id_it_.end()) return -1;
     return ranks_.order_of_key(*it->second) + 1;
@@ -59,13 +60,13 @@ struct Rank {
 
 static const char* META = "LRANK_META";
 struct Lrank {
-  static int create(lua_State* L);
-  static void meta(lua_State* L);
-  static int gc(lua_State* L);
+  static int create(lua_State*);
+  static void meta(lua_State*);
+  static int gc(lua_State*);
 
-  static int add(lua_State* L);
-  static int get_order(lua_State* L);
-  static int info(lua_State* L);
+  static int add(lua_State*);
+  static int order(lua_State*);
+  static int info(lua_State*);
 };
 
 int Lrank::info(lua_State* L) {
@@ -89,7 +90,7 @@ int Lrank::info(lua_State* L) {
   return 1;
 }
 
-int Lrank::get_order(lua_State* L) {
+int Lrank::order(lua_State* L) {
   Rank** pp = (Rank**)luaL_checkudata(L, 1, META);
   Rank& rank = **pp;
 
@@ -120,7 +121,7 @@ int Lrank::gc(lua_State* L) {
 void Lrank::meta(lua_State* L) {
   if (luaL_newmetatable(L, META)) {
     luaL_Reg l[] = {
-        {"add", add}, {"get_order", get_order}, {"info", info}, {NULL, NULL}};
+        {"add", add}, {"order", order}, {"info", info}, {NULL, NULL}};
     luaL_newlib(L, l);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, gc);

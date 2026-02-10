@@ -77,33 +77,39 @@ end
 local rank = function()
     print("rank test ===")
     local lrank = require "lgame.rank"
-    local core = lrank.create(5)
-    for i = 1, 10 do
-        core:add(i, i * 10, 0)
+    local test = function()
+        local core = lrank.create(5)
+        for i = 1, 10 do
+            core:add(i, i * 10, 0)
+        end
+        print(dump(core:info(3, 5)))
+        print(dump(core:info(1, 10)))
+        print(core:order(1), core:order(8))
     end
-    print(dump(core:info(1, 3)))
-    print(core:get_order(1), core:get_order(10))
+    test()
 
-    local core = lrank.create(1000)
-    local t = skynet.now()
-    for i = 1, 1000000 do
-        core:add(random(2000), random(20000), i)
-    end
-    print(skynet.now() - t)
+    local press = function()
+        local core = lrank.create(1000)
+        local t = skynet.now()
+        for i = 1, 1000000 do
+            core:add(random(2000), random(20000), i)
+        end
+        print(skynet.now() - t)
 
-    local t = skynet.now()
-    local arr
-    for i = 1, 10000 do
-        arr = core:info(1, 1000)
-    end
-    print(skynet.now() - t, #arr)
+        local t = skynet.now()
+        for i = 1, 10000 do
+            local arr = core:info(1, 1000)
+        end
+        print(skynet.now() - t, #core:info(1, 1000))
 
-    local t = skynet.now()
-    local order = 0
-    for i = 1, 3000000 do
-        order = core:get_order(1000)
+        local t = skynet.now()
+        local order = 0
+        for i = 1, 3000000 do
+            order = core:order(1000)
+        end
+        print(skynet.now() - t, order)
     end
-    print(skynet.now() - t, order)
+    press()
 end
 
 local msgpack = function()
@@ -187,11 +193,27 @@ local crc = function()
     print(skynet.now() - t)
 end
 
+local timer = function()
+    local func = require "common.func.timer"
+    local timer = func(function(id, ...)
+        print("expire", id, ...)
+    end)
+    timer.add(1, 1, "test1")
+    timer.add(1, 10, "test1")
+    timer.add(2, 3, "test2")
+    timer.add(3, 5, 3)
+    -- timer.del_id(2)
+    -- timer.del_mark(1, "test1")
+    timer.expire(5)
+    print(dump(timer.info()))
+end
+
 skynet.start(function()
+    timer()
     -- crc()
     -- rank()
     -- lru()
-    msgpack()
+    -- msgpack()
     -- trie()
-    zstd_press()
+    -- zstd_press()
 end)
