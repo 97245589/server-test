@@ -44,6 +44,9 @@ end
 M.all_tick = function(player, tm)
     for name, func in pairs(ticks) do
         local ok, err = pcall(func, player, tm)
+        if not ok then
+            print("tick err", name, err)
+        end
     end
 end
 

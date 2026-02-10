@@ -2,7 +2,6 @@ local skynet = require "skynet"
 local mgrs = require "server.game.plmgr.mgrs"
 local db = require "common.func.leveldb"
 local zstd = require "common.func.zstd"
-local enums = require "server.game.player.enums"
 local M = {}
 
 local gameid = tonumber(skynet.getenv("server_id"))
@@ -19,7 +18,7 @@ M.gen_id = function()
 end
 
 M.create_acc = function(acc)
-    local acc_bin = db.call("hget", enums.dbkey_acc, acc)
+    local acc_bin = db.call("hget", "acc", acc)
     local acc_arr
     if acc_bin then
         acc_arr = zstd.decode(acc_bin)
@@ -44,9 +43,9 @@ M.create_acc = function(acc)
         }
     }
     table.insert(acc_arr, newid)
-    db.send("hset", enums.dbkey_acc, acc, zstd.encode(acc_arr))
-    db.send("hset", enums.dbkey_player, newid, zstd.encode(nplayer))
-    db.send("hset", enums.dbkey_role, newid, zstd.encode(role))
+    db.send("hset", "acc", acc, zstd.encode(acc_arr))
+    db.send("hset", "player", newid, zstd.encode(nplayer))
+    db.send("hset", "role", newid, zstd.encode(role))
 end
 
 mgrs.add_mgr(M, "player")
