@@ -4,9 +4,11 @@ local profile = require "skynet.profile"
 local func_cost = {}
 
 skynet.fork(function()
-    skynet.sleep(600)
-    print(dump(func_cost))
-    func_cost = {}
+    while true do
+        skynet.sleep(100 * 60 * 5)
+        print(dump(func_cost))
+        func_cost = {}
+    end
 end)
 
 return function(name, func, ...)
