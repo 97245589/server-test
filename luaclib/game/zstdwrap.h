@@ -27,7 +27,6 @@ struct Zstdwrap {
     }
     std::string str;
     str.resize(desize);
-    str.resize(ZSTD_getDecompressedSize(p, len));
     size_t rlen = ZSTD_decompress(str.data(), str.size(), p, len);
     if (ZSTD_isError(rlen)) {
       return std::string();
