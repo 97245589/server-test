@@ -1,19 +1,20 @@
 extern "C" {
 #include "lauxlib.h"
 }
+#include <memory>
+
 #include "msgpack.h"
 using namespace std;
 
 struct Unpack {
-  lua_State* L;
-  void unpack(const char*& p);
-
   template <typename T>
   static void parselen(const char*& p, T& v) {
     v = *(T*)p;
     p += sizeof(T);
     v = Msgpack::endian_change(v);
   }
+  lua_State* L;
+  void unpack(const char*& p);
 };
 
 void Unpack::unpack(const char*& p) {
@@ -206,6 +207,10 @@ struct Pack {
   lua_State* L;
   Msgpack pack_;
   uint32_t dep_;
+  struct Tmp {
+    Pack* pack_;
+    int index_;
+  };
 
   void pack(int index);
   uint32_t table_len(int index);
@@ -213,11 +218,13 @@ struct Pack {
 };
 uint32_t Pack::table_len(int index) {
   uint32_t i = 0;
-  lua_pushnil(L);
-  while (lua_next(L, index) != 0) {
-    ++i;
-    lua_pop(L, 1);
-  }
+  lua_traversal(
+      L, index,
+      [](void* p) {
+        uint32_t* pi = (uint32_t*)p;
+        *pi = *pi + 1;
+      },
+      &i);
   return i;
 }
 void Pack::pack_table(int index) {
@@ -228,25 +235,29 @@ void Pack::pack_table(int index) {
   }
   int32_t rawlen = lua_rawlen(L, index);
   int32_t tablen = table_len(index);
-  bool ismap;
+
+  Tmp tmp = {.pack_ = this, .index_ = index};
   if (rawlen == tablen) {
     pack_.pack_arr_head(tablen);
-    ismap = false;
+    lua_traversal(
+        L, index,
+        [](void* p) {
+          Tmp& tmp = *(Tmp*)p;
+          tmp.pack_->pack(tmp.index_ + 2);
+        },
+        &tmp);
   } else {
     pack_.pack_map_head(tablen);
-    ismap = true;
+    lua_traversal(
+        L, index,
+        [](void* p) {
+          Tmp& tmp = *(Tmp*)p;
+          tmp.pack_->pack(tmp.index_ + 1);
+          tmp.pack_->pack(tmp.index_ + 2);
+        },
+        &tmp);
   }
 
-  lua_pushnil(L);
-  while (lua_next(L, index) != 0) {
-    if (!ismap) {
-      pack(index + 2);
-    } else {
-      pack(index + 1);
-      pack(index + 2);
-    }
-    lua_pop(L, 1);
-  }
   --dep_;
 }
 void Pack::pack(int index) {
@@ -289,11 +300,16 @@ void Pack::pack(int index) {
 }
 static int encode(lua_State* L) {
   lua_settop(L, 1);
-  Pack pack{.L = L, .dep_ = 0};
-  string& buff = pack.pack_.buff_;
-  buff.reserve(1024 * 2);
-  pack.pack(1);
-  lua_pushlstring(L, buff.data(), buff.size());
+  unique_ptr<Pack> p = make_unique<Pack>();
+  p->L = L;
+  p->dep_ = 0;
+  auto& pack = p->pack_;
+  pack.len_ = 0;
+  p->pack(1);
+  if (pack.len_ > sizeof(pack.buff_) - 50 * 1024) {
+    return luaL_error(L, "msgpack pack len may err");
+  }
+  lua_pushlstring(L, pack.buff_, pack.len_);
   return 1;
 }
 

@@ -1,19 +1,16 @@
 local skynet = require "skynet"
 local db = require "common.func.leveldb"
-local zstd = require "common.func.zstd"
 local mgrs = require "server.game.plmgr.mgrs"
 
 local dbdata = {}
 local load = function()
     local bin = db.call("hget", "game", "plmgr")
     if bin then
-        return zstd.decode(bin)
     else
     end
 end
 
 local save = function()
-    local bin = zstd.encode(dbdata)
     db.send("hset", "game", "plmgr", bin)
 end
 

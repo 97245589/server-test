@@ -2,9 +2,10 @@ require "common.func.tool"
 local random = math.random
 local skynet = require "skynet"
 
-local zstd_press = function()
-    print("zstd test ===")
-    local zstd = require "common.func.zstd"
+local encode_press = function()
+    print("encode test ===")
+    local msgpack = require "lgame.msgpack"
+    local zstd = require "lgame.zstd"
     local sproto = require "sproto"
 
     local sp = sproto.parse [[
@@ -34,20 +35,34 @@ local zstd_press = function()
         }
     end
 
-    local n = 300
-    local sbin, bin
+    local n = 1000
+    local bin
     local t = skynet.now()
     for i = 1, n do
-        sbin = sp:pencode("Obj", obj)
+        bin = sp:pencode("Obj", obj)
     end
-    print("sproto", skynet.now() - t, #sbin)
+    print("sproto", skynet.now() - t, #bin)
+
     skynet.sleep(1)
     local t = skynet.now()
     for i = 1, n do
-        bin = zstd.encode(obj)
+        bin = skynet.packstring(obj)
     end
-    print("zstd", skynet.now() - t, #bin)
-    -- print(dump(zstd.decode(bin)))
+    print("skynetpack", skynet.now() - t, #bin)
+
+    skynet.sleep(1)
+    local t = skynet.now()
+    for i = 1, n do
+        bin = msgpack.encode(obj)
+    end
+    print("msgpack", skynet.now() - t, #bin)
+
+    local t = skynet.now()
+    local cbin
+    for i = 1, n do
+        cbin = zstd.compress(bin)
+    end
+    print(skynet.now() - t, #cbin)
 end
 
 local lru = function()
@@ -115,9 +130,6 @@ end
 local msgpack = function()
     print("msgpack test")
     local msgpack = require "lgame.msgpack"
-    local zstd = require "common.func.zstd"
-
-    print("zstd illegal", #zstd.decompress("test"))
 
     local obj = {
         obj = {
@@ -143,12 +155,6 @@ local msgpack = function()
     local bin = msgpack.encode(obj)
     local nobj = msgpack.decode(bin)
     print(dump(nobj))
-
-    print("zstd obj =====")
-    local zbin = zstd.encode(obj)
-    local zobj = zstd.decode(zbin)
-    print(#bin, #zbin)
-    print(dump(zobj))
 end
 
 local trie = function()
@@ -209,11 +215,11 @@ local timer = function()
 end
 
 skynet.start(function()
-    timer()
+    -- timer()
     -- crc()
     -- rank()
     -- lru()
-    -- msgpack()
+    msgpack()
     -- trie()
-    -- zstd_press()
+    encode_press()
 end)
