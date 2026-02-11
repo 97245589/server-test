@@ -51,6 +51,14 @@ local encode_press = function()
     end
     print("skynetpack", skynet.now() - t, #bin)
 
+    local t = skynet.now()
+    local cbin
+    for i = 1, n do
+        cbin = zstd.compress(bin)
+    end
+    print("compress", skynet.now() - t, #cbin)
+
+
     skynet.sleep(1)
     local t = skynet.now()
     for i = 1, n do
@@ -59,15 +67,8 @@ local encode_press = function()
     print("msgpack", skynet.now() - t, #bin)
 
     local t = skynet.now()
-    local cbin
     for i = 1, n do
-        cbin = zstd.compress(bin)
-    end
-    print("compress", skynet.now() - t, #cbin)
-
-    local t = skynet.now()
-    for i = 1, n do
-        skynet.packstring(bin)
+        skynet.packstring(cbin)
     end
     print("packstr", skynet.now() - t)
 end

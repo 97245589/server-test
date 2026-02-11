@@ -1,7 +1,6 @@
 local require = require
 local mgrs = require "server.game.player.mgr.mgrs"
 local cfg = require "common.func.cfg"
-local enums = require "server.game.player.enums"
 
 local M = {}
 
@@ -33,8 +32,12 @@ M.add_gold = function(player, num)
     item.gold = item.gold + num
 end
 
+local itemuse_enums = {
+    gold = 1,
+}
+
 local use_handle = {
-    [enums.itemuse_gold] = function(player, num)
+    [itemuse_enums.gold] = function(player, num)
         local item = player.item
         local add = cfg.params[1]
         item.gold = item.gold + add * num

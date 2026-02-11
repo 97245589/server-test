@@ -1,8 +1,8 @@
 local require = require
 local os = os
 local mgrs = require "server.game.player.mgr.mgrs"
-local enums = require "server.game.player.enums"
 local rpc = require "server.game.rpc"
+local db = require "common.func.ldb"
 
 local M = {}
 
@@ -10,7 +10,6 @@ local players = {}
 M.players = players
 
 local player_db = function(playerid)
-    -- local bin = db.call("hget", enums.dbkey_player, playerid)
     if players[playerid] then
         return players[playerid]
     end
