@@ -1,8 +1,15 @@
-local require = require
-local mgrs = require "server.game.player.mgr.mgrs"
+local mgrs = require "server.game.player.mgrs"
 local cfg = require "common.func.cfg"
+local timer = require "server.game.player.timer"
+
+timer.handle[timer.enums.test] = function(player, itemid)
+end
 
 local M = {}
+
+M.add_timer = function(player, itemid, tm)
+    timer.timer.add(player.id, tm, timer.enums.test, itemid)
+end
 
 M.init = function(player)
     player.item = player.item or {}

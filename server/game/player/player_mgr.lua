@@ -1,8 +1,6 @@
 local require = require
 local os = os
-local mgrs = require "server.game.player.mgr.mgrs"
-local rpc = require "server.game.rpc"
-local db = require "common.func.ldb"
+local mgrs = require "server.game.player.mgrs"
 
 local M = {}
 
@@ -28,17 +26,6 @@ M.get_player = function(playerid)
     player.id = playerid
     player.role.gettm = os.time()
     return player
-end
-
-M.get_brief_info = function(playerid)
-    local player = players[playerid]
-    if player then
-        return player.role
-    end
-    local info = rpc.call_id("player", "get_brief_info", playerid)
-    if info then
-        return info
-    end
 end
 
 M.save_player = function(player)

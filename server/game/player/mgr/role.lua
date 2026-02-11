@@ -1,5 +1,5 @@
 local require = require
-local mgrs = require "server.game.player.mgr.mgrs"
+local mgrs = require "server.game.player.mgrs"
 
 local M = {}
 

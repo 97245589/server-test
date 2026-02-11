@@ -6,7 +6,7 @@ local os = os
 local skynet = require "skynet"
 local player_mgr = require "server.game.player.player_mgr"
 local client = require "server.game.player.client"
-local mgrs = require "server.game.player.mgr.mgrs"
+local timer = require "server.game.player.timer"
 
 local players = player_mgr.players
 local playerids = {}
@@ -23,11 +23,12 @@ local save_kick = function(tm)
         end
         local playerid = table.remove(playerids)
         local player = players[playerid]
+        player_mgr.save_player(player)
         if tm > player.role.gettm + 10 then
             players[playerid] = nil
+            timer.timer.del_id(playerid)
             client.kick_player(playerid)
         end
-        player_mgr.save_player(player)
     end
 end
 
@@ -36,8 +37,6 @@ skynet.fork(function()
         skynet.sleep(100)
         local tm = os.time()
         save_kick(tm)
-        for playerid, player in pairs(players) do
-            mgrs.all_tick(player, tm)
-        end
+        timer.timer.expire(tm)
     end
 end)
