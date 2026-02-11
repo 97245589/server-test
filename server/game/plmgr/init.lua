@@ -5,9 +5,9 @@ local require_files = function()
     require "server.game.plmgr.player"
 
     local mgrs = require "server.game.plmgr.mgrs"
-    local db = require "server.game.plmgr.db"
-    mgrs.all_init(db.get_dbdata())
-    db.start_tick()
+    local tick = require "server.game.plmgr.tick"
+    mgrs.all_init(tick.get_dbdata())
+    tick.start_tick()
 end
 
 start(function()

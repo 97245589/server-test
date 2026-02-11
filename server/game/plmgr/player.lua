@@ -1,6 +1,5 @@
 local skynet = require "skynet"
 local mgrs = require "server.game.plmgr.mgrs"
-local db = require "common.func.leveldb"
 local M = {}
 
 local gameid = tonumber(skynet.getenv("server_id"))

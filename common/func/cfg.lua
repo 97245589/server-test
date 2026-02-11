@@ -1,4 +1,3 @@
-local pairs = pairs
 local io = io
 local load = load
 

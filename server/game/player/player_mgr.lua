@@ -1,6 +1,5 @@
 local require = require
 local os = os
-local db = require "common.func.leveldb"
 local mgrs = require "server.game.player.mgr.mgrs"
 local enums = require "server.game.player.enums"
 local rpc = require "server.game.rpc"
