@@ -2,7 +2,6 @@ local require = require
 local tonumber = tonumber
 local skynet = require "skynet"
 local start = require "common.service.start"
-local fip = require "common.func.ip"
 local cmds = require "common.service.cmds"
 
 start(function()
@@ -15,9 +14,9 @@ start(function()
         local ip
         require "common.service.cluster"
         if gametype == 2 then
-            ip = fip.private()
+            ip = skynet.getenv("priip")
         elseif gametype == 3 then
-            ip = fip.public()
+            ip = skynet.getenv("pubip")
         end
 
         local host = ip .. ":" .. skynet.getenv("gate_port")

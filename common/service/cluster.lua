@@ -4,9 +4,8 @@ local pairs = pairs
 local next = next
 local skynet = require "skynet"
 local cluster = require "skynet.cluster"
-local fip = require "common.func.ip"
 
-local sip = fip.private()
+local sip = skynet.getenv("priip")
 local port = skynet.getenv("cluster_port")
 local shost = sip .. ":" .. port
 local server_mark = skynet.getenv("server_mark")
