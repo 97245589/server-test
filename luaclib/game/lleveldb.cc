@@ -249,7 +249,7 @@ int Lleveldb::create(lua_State* L) {
   leveldb::DB* db;
   leveldb::Options options;
   options.create_if_missing = true;
-  options.compression = leveldb::kNoCompression;
+  options.compression = leveldb::kSnappyCompression;
   options.write_buffer_size = 20 * 1024 * 1024;
   options.max_file_size = 10 * 1024 * 1024;
   options.block_size = 20 * 1024;
