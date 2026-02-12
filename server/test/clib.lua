@@ -65,12 +65,6 @@ local encode_press = function()
         bin = msgpack.encode(obj)
     end
     print("msgpack", skynet.now() - t, #bin)
-
-    local t = skynet.now()
-    for i = 1, n do
-        skynet.packstring(cbin)
-    end
-    print("packstr", skynet.now() - t)
 end
 
 local lru = function()
