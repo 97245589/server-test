@@ -4,11 +4,14 @@ local mode = ...
 
 if mode == "child" then
     -- del keys hkeys hset hget hdel compact
-    local ldb = require "lgame.leveldb"
-    local db = ldb.create("db/" .. skynet.getenv("server_mark"))
 
     skynet.start(function()
+        local db
         skynet.dispatch("lua", function(_, _, cmd, ...)
+            if not db then
+                local ldb = require "lgame.leveldb"
+                db = ldb.create("db/" .. skynet.getenv("server_mark"))
+            end
             skynet.retpack(db[cmd](db, ...))
         end)
     end)
