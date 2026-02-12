@@ -25,18 +25,19 @@ end
 local test1 = function()
     local db = require "common.func.ldb"
     local t = skynet.now()
-    for i = 1, 100000 do
-        db("hmset", "test", "hello", "world")
+    for i = 1, 1000000 do
+        db("hmset", "test" .. i, "hello", "world" .. i)
     end
     print(skynet.now() - t)
 
     local t = skynet.now()
     local val
-    for i = 1, 100000 do
-        val = db("hmget", "test", "hello")
+    for i = 1, 1000000 do
+        val = db("hmget", "test" .. i, "hello")
     end
     print(skynet.now() - t, val[1])
     db("del", "test")
+    db("compact")
 end
 
 skynet.start(function()
