@@ -24,14 +24,14 @@ struct Lleveldb {
 
   static int keys(lua_State* L);
   static int del(lua_State* L);
-  static int hget(lua_State* L);
-  static int hset(lua_State* L);
-  static int hkeys(lua_State* L);
+  static int hmget(lua_State* L);
+  static int hmset(lua_State* L);
+  static int hgetall(lua_State* L);
   static int hdel(lua_State* L);
   static int compact(lua_State* L);
 
   static void search_key(
-      leveldb::DB*& db, const string& str,
+      leveldb::DB* db, const string& str,
       function<void(const string&, const string&, const string&)> func);
 
   const static char split_ = 0xff;
@@ -44,44 +44,61 @@ int Lleveldb::compact(lua_State* L) {
   return 0;
 }
 
-int Lleveldb::hget(lua_State* L) {
+int Lleveldb::hmset(lua_State* L) {
   Lleveldb* p = (Lleveldb*)luaL_checkudata(L, 1, META);
   leveldb::DB* db = p->db_;
 
+  int pnum = lua_gettop(L);
+  if (pnum < 4 || pnum % 2 != 0) {
+    return luaL_error(L, "leveldb hmset len arr");
+  }
   size_t lk;
   const char* pk = luaL_checklstring(L, 2, &lk);
-  size_t lhk;
-  const char* phk = luaL_checklstring(L, 3, &lhk);
   string key(pk, lk);
-  string hkey(phk, lhk);
-  key = key + split_ + hkey;
 
-  string val;
-  leveldb::Status s = db->Get(leveldb::ReadOptions(), key, &val);
-  if (s.ok()) {
-    lua_pushlstring(L, val.data(), val.size());
-    return 1;
-  } else {
-    return 0;
+  leveldb::WriteBatch batch;
+  for (int i = 3; i < pnum; i += 2) {
+    size_t lhk;
+    const char* phk = luaL_checklstring(L, i, &lhk);
+    string hkey(phk, lhk);
+    string rkey = key + split_ + hkey;
+    size_t lv;
+    const char* pv = luaL_checklstring(L, i + 1, &lv);
+    string val(pv, lv);
+    batch.Put(rkey, val);
   }
+  db->Write(leveldb::WriteOptions(), &batch);
+  return 0;
 }
 
-int Lleveldb::hset(lua_State* L) {
+int Lleveldb::hmget(lua_State* L) {
   Lleveldb* p = (Lleveldb*)luaL_checkudata(L, 1, META);
   leveldb::DB* db = p->db_;
 
+  int pnum = lua_gettop(L);
+  if (pnum < 3) {
+    return luaL_error(L, "leveldb hmget len arr");
+  }
+
   size_t lk;
   const char* pk = luaL_checklstring(L, 2, &lk);
-  size_t lhk;
-  const char* phk = luaL_checklstring(L, 3, &lhk);
-  size_t lval;
-  const char* pval = luaL_checklstring(L, 4, &lval);
   string key(pk, lk);
-  string hkey(phk, lhk);
-  key = key + split_ + hkey;
-
-  db->Put(leveldb::WriteOptions(), key, {pval, lval});
-  return 0;
+  lua_createtable(L, pnum - 2, 0);
+  for (int i = 3; i <= pnum; ++i) {
+    size_t lhk;
+    const char* phk = luaL_checklstring(L, i, &lhk);
+    string hkey(phk, lhk);
+    string rkey = key + split_ + hkey;
+    string val;
+    leveldb::Status s = db->Get(leveldb::ReadOptions(), rkey, &val);
+    if (s.ok()) {
+      lua_pushlstring(L, val.c_str(), val.size());
+    } else {
+      lua_pushnil(L);
+    }
+    lua_rawseti(L, -2, i - 2);
+  }
+  return 1;
 }
 
 int Lleveldb::hdel(lua_State* L) {
@@ -109,7 +126,7 @@ int Lleveldb::hdel(lua_State* L) {
 }
 
 void Lleveldb::search_key(
-    leveldb::DB*& db, const string& str,
+    leveldb::DB* db, const string& str,
     function<void(const string&, const string&, const string&)> func) {
   string start = str + split_;
   string end = start + char(0xff);
@@ -118,7 +135,6 @@ void Lleveldb::search_key(
 
   for (it->Seek(start); it->Valid() && it->key().ToString() < end; it->Next()) {
     string k = it->key().ToString();
-
     if (k.size() <= start.size()) {
       continue;
     }
@@ -132,6 +148,27 @@ void Lleveldb::search_key(
   }
 
   delete it;
+}
+
+int Lleveldb::hgetall(lua_State* L) {
+  Lleveldb* p = (Lleveldb*)luaL_checkudata(L, 1, META);
+  leveldb::DB* db = p->db_;
+
+  size_t len;
+  const char* ps = luaL_checklstring(L, 2, &len);
+  string str(ps, len);
+
+  lua_createtable(L, 0, 0);
+  int i = 0;
+  search_key(db, str,
+             [&](const string& key, const string& val, const string& realkey) {
+               lua_pushlstring(L, key.c_str(), key.size());
+               lua_rawseti(L, -2, ++i);
+               lua_pushlstring(L, val.c_str(), val.size());
+               lua_rawseti(L, -2, ++i);
+             });
+
+  return 1;
 }
 
 int Lleveldb::keys(lua_State* L) {
@@ -185,24 +222,6 @@ int Lleveldb::del(lua_State* L) {
   return 0;
 }
 
-int Lleveldb::hkeys(lua_State* L) {
-  Lleveldb* p = (Lleveldb*)luaL_checkudata(L, 1, META);
-  leveldb::DB* db = p->db_;
-
-  size_t len;
-  const char* ps = luaL_checklstring(L, 2, &len);
-  string str(ps, len);
-  lua_createtable(L, 0, 0);
-  int i = 0;
-  search_key(db, str,
-             [&](const string& key, const string& val, const string& realkey) {
-               lua_pushlstring(L, key.c_str(), key.size());
-               lua_rawseti(L, -2, ++i);
-             });
-
-  return 1;
-}
-
 int Lleveldb::gc(lua_State* L) {
   Lleveldb* p = (Lleveldb*)luaL_checkudata(L, 1, META);
   delete p->db_;
@@ -211,8 +230,9 @@ int Lleveldb::gc(lua_State* L) {
 
 void Lleveldb::meta(lua_State* L) {
   if (luaL_newmetatable(L, META)) {
-    luaL_Reg l[] = {{"del", del},         {"keys", keys}, {"hkeys", hkeys},
-                    {"hset", hset},       {"hget", hget}, {"hdel", hdel},
+    luaL_Reg l[] = {{"del", del},         {"keys", keys},
+                    {"hgetall", hgetall}, {"hmset", hmset},
+                    {"hmget", hmget},     {"hdel", hdel},
                     {"compact", compact}, {NULL, NULL}};
     luaL_newlib(L, l);
     lua_setfield(L, -2, "__index");
@@ -229,19 +249,17 @@ int Lleveldb::create(lua_State* L) {
   leveldb::DB* db;
   leveldb::Options options;
   options.create_if_missing = true;
-  options.compression = leveldb::kNoCompression;
-  options.write_buffer_size = 16 * 1024 * 1024;
-  options.max_file_size = 8 * 1024 * 1024;
-  options.block_size = 16 * 1024;
+  options.compression = leveldb::kSnappyCompression;
+  options.write_buffer_size = 20 * 1024 * 1024;
+  options.max_file_size = 10 * 1024 * 1024;
+  options.block_size = 20 * 1024;
   leveldb::Status status = leveldb::DB::Open(options, {pname, len}, &db);
 
   if (!status.ok()) {
     return luaL_error(L, "leveldb open err");
   }
-
   Lleveldb* pl = (Lleveldb*)lua_newuserdata(L, sizeof(Lleveldb));
   pl->db_ = db;
-
   meta(L);
   return 1;
 }
