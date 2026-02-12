@@ -10,7 +10,7 @@ GAMESRC_CCS := $(shell find ./game -name "*.cc")
 GAMESRC_CS := $(shell find ./game -name "*.c")
 GAME_OES := $(GAMESRC_CCS:.cc=.o) $(GAMESRC_CS:.c=.o)
 lgame.so : $(GAME_OES)
-	g++ -o $@ $^ -shared $(3RDFLAG) -lzstd -lleveldb
+	g++ -o $@ $^ -shared $(3RDFLAG) -lleveldb -lsnappy
 
 %.o : %.cc
 	g++ -o $@ -c $< $(CXX_FLAGS) -I$(3RDPATH)

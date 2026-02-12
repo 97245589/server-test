@@ -5,7 +5,6 @@ extern "C" {
 #include <string>
 
 #include "tsl/htrie_map.h"
-#include "zstdwrap.h"
 using namespace std;
 
 using trie_map = tsl::htrie_map<char, int64_t>;
@@ -18,48 +17,7 @@ struct Ltriemap {
   static int insert(lua_State*);
   static int val(lua_State*);
   static int erase(lua_State*);
-  static int seri(lua_State*);
-  static int deseri(lua_State*);
 };
-
-int Ltriemap::deseri(lua_State* L) {
-  trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
-  trie_map& tmap = **pp;
-  size_t slen;
-  const char* pstr = luaL_checklstring(L, 2, &slen);
-  string cont = Zstdwrap::decompress(pstr, slen);
-
-  const char* pstart = cont.data();
-  const char* pend = pstart + cont.size();
-  while (pstart < pend) {
-    uint32_t keysize = *(uint32_t*)pstart;
-    pstart += sizeof(keysize);
-    string key(pstart, keysize);
-    pstart += keysize;
-    int64_t val = *(int64_t*)pstart;
-    pstart += sizeof(val);
-    tmap.insert(key, val);
-  }
-  return 0;
-}
-
-int Ltriemap::seri(lua_State* L) {
-  trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
-  trie_map& tmap = **pp;
-  string str;
-  str.reserve(1024);
-  for (auto it = tmap.begin(); it != tmap.end(); ++it) {
-    string key = it.key();
-    int64_t val = *it;
-    uint32_t keysize = key.size();
-    str.append((const char*)&keysize, sizeof(keysize));
-    str.append(key.data(), key.size());
-    str.append((const char*)&val, sizeof(val));
-  }
-  string bin = Zstdwrap::compress(str.data(), str.size());
-  lua_pushlstring(L, bin.data(), bin.size());
-  return 1;
-}
 
 int Ltriemap::val(lua_State* L) {
   trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
@@ -101,8 +59,8 @@ int Ltriemap::gc(lua_State* L) {
 
 void Ltriemap::meta(lua_State* L) {
   if (luaL_newmetatable(L, META)) {
-    luaL_Reg l[] = {{"insert", insert}, {"erase", erase},   {"val", val},
-                    {"seri", seri},     {"deseri", deseri}, {NULL, NULL}};
+    luaL_Reg l[] = {
+        {"insert", insert}, {"erase", erase}, {"val", val}, {NULL, NULL}};
     luaL_newlib(L, l);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, gc);

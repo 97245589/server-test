@@ -8,7 +8,6 @@ extern "C" {
 #include <string>
 #include <unordered_map>
 
-#include "zstdwrap.h"
 using namespace std;
 
 struct Rank {
