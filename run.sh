@@ -1,9 +1,10 @@
+#!/bin/bash
 export PRIIP=`ip route get 1 | awk '{print $7}'`
 # export PUBIP=`curl -s ifconfig.me`
 
 export TEST=""
 export DAEMON=false
-while getopts "dks:t:" arg
+while getopts "ds:t:" arg
 do
 	case $arg in
 	 	s)
