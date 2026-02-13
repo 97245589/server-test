@@ -1,28 +1,64 @@
-local pairs = pairs
-local pcall = pcall
-local inits = {}
-local ticks = {}
+local skynet = require "skynet"
+local db = require "common.func.ldb"
+local timerf = require "common.func.timer"
 
-local M     = {}
-
-M.add_mgr   = function(mgr, name)
-    inits[name] = mgr.init
-    ticks[name] = mgr.tick
-end
-
-M.all_init  = function(data)
-    for k, func in pairs(inits) do
-        func(data)
+local dbdata = {}
+local savefields = {
+    player = 1
+}
+local load = function()
+    local arr = db("hgetall", "plmgr")
+    for i = 1, #arr do
+        local k = arr[i]
+        local vbin = arr[i + 1]
+        dbdata[k] = skynet.unpack(vbin)
     end
 end
 
-M.all_tick  = function(tm)
-    for k, tick in pairs(ticks) do
-        local ok, err = pcall(tick, tm)
-        if not ok then
-            print("tick err", k, err)
+local save = function()
+    local arr = { "plmgr" }
+    for k in pairs(savefields) do
+        table.insert(arr, k)
+        table.insert(arr, skynet.packstring(dbdata[k]))
+    end
+    db("hmset", table.unpack(arr))
+end
+
+local M = {}
+
+local timerhandle = {}
+local timer = timerf(function(id, cmd, ...)
+    local func = timerhandle[cmd]
+    if not func then
+        print("timer cannot have cmd", cmd, ...)
+        return
+    end
+    func(...)
+end)
+M.timer = {
+    handle = timerhandle,
+    add = function(tm, cmd, ...)
+        timer.add(1, tm, cmd, ...)
+    end
+}
+
+M.add_mgr = function(mgr, name)
+    if mgr.init then
+        mgr.init(dbdata)
+    end
+end
+
+local lastsavetm = os.time()
+skynet.fork(function()
+    while true do
+        skynet.sleep(100)
+        local tm = os.time()
+        if tm - lastsavetm > 30 then
+            lastsavetm = tm
+            timer.expire(tm)
+            -- save()
         end
     end
-end
+end)
 
 return M

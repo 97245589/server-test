@@ -9,8 +9,11 @@ local push = client.push
 local req = client.req
 
 req.get_data = function(player)
+    print("get_data", dump(player))
+    local pitem = player.item
+    print(dump(player))
     local ret = {
-        code = 0
+        code = 0,
     }
     push(player.id, "pushtest", {})
     return ret

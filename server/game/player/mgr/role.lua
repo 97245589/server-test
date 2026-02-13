@@ -8,12 +8,9 @@ M.init = function(player)
     local role = player.role
     -- role.playerid
     -- role.acc
-    role.level = role.level or 0
+    -- role.online
+    role.level = role.level or 1
 end
-
--- M.tick = function(player)
---     print("role test tick", dump(player))
--- end
 
 mgrs.add_mgr(M, "role")
 return M

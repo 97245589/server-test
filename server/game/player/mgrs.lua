@@ -1,14 +1,17 @@
 local require = require
 local pairs = pairs
-local ipairs = ipairs
-local pcall = pcall
+local skynet = require "skynet"
 local cfg = require "common.func.cfg"
+local timerf = require "common.func.timer"
+local client = require "server.game.player.client"
+local player_mgr = require "server.game.player.player_mgr"
+local players = player_mgr.players
 
 local M = {}
-
-local inits = {}
 local cfgs = {}
-local ticks = {}
+local inits = {}
+M.inits = inits
+player_mgr.init_func = inits
 
 M.reload_cfg = function(cfgname)
     cfg.reload(cfgname, function(mnames)
@@ -18,36 +21,63 @@ M.reload_cfg = function(cfgname)
     end)
 end
 
-M.add_mgr = function(mgr, name, init_level)
-    if mgr.init then
-        init_level = init_level or 1
-        inits[init_level] = inits[init_level] or {}
-        inits[init_level][name] = mgr.init
-    end
-
+M.add_mgr = function(mgr, name)
+    inits[name] = mgr.init
     if mgr.cfg then
         cfgs[name] = mgr.cfg
         cfg.cfg_func(name, mgr.cfg)
     end
-
-    ticks[name] = mgr.tick
 end
 
-M.all_init = function(player)
-    for idx, funcs in ipairs(inits) do
-        for name, func in pairs(funcs) do
-            func(player)
+local timerhandle = {}
+local timer = timerf(function(id, cmd, ...)
+    local player = players[id]
+    if not player then
+        print("timer no player", id)
+        return
+    end
+    local func = timerhandle[cmd]
+    if not func then
+        print("timer no handle func", cmd)
+        return
+    end
+    func(player, ...)
+end)
+M.timer = {
+    add = timer.add,
+    handle = timerhandle
+}
+
+local playerids = {}
+local save_kick = function(tm)
+    if not next(playerids) then
+        for playerid in pairs(players) do
+            table.insert(playerids, playerid)
+        end
+    end
+
+    for i = 1, 10 do
+        if not next(playerids) then
+            return
+        end
+        local playerid = table.remove(playerids)
+        local player = players[playerid]
+        player_mgr.save_player(player)
+        if tm > player.gettm + 10 then
+            players[playerid] = nil
+            timer.del_id(playerid)
+            client.kick_player(playerid)
         end
     end
 end
 
-M.all_tick = function(player, tm)
-    for name, func in pairs(ticks) do
-        local ok, err = pcall(func, player, tm)
-        if not ok then
-            print("tick err", name, err)
-        end
+skynet.fork(function()
+    while true do
+        skynet.sleep(100)
+        local tm = os.time()
+        timer.expire(tm)
+        save_kick(tm)
     end
-end
+end)
 
 return M

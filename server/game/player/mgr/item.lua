@@ -1,15 +1,15 @@
 local mgrs = require "server.game.player.mgrs"
 local cfg = require "common.func.cfg"
-local timer = require "server.game.player.timer"
+local enums = require "server.game.player.enums"
 
-timer.handle[timer.enums.test] = function(player, itemid)
+local timer = mgrs.timer
+timer.handle[enums.timer_item] = function(player, itemid)
+end
+local add_timer = function(player, tm, itemid)
+    timer.add(player.id, tm, enums.timer_item, itemid)
 end
 
 local M = {}
-
-M.add_timer = function(player, itemid, tm)
-    timer.timer.add(player.id, tm, timer.enums.test, itemid)
-end
 
 M.init = function(player)
     player.item = player.item or {}
@@ -37,17 +37,14 @@ end
 M.add_gold = function(player, num)
     local item = player.item
     item.gold = item.gold + num
+    player.dirtys.item = 1
 end
 
-local itemuse_enums = {
-    gold = 1,
-}
 
 local use_handle = {
-    [itemuse_enums.gold] = function(player, num)
-        local item = player.item
-        local add = cfg.params[1]
-        item.gold = item.gold + add * num
+    [enums.itemuse_gold] = function(player, num, icfg)
+        local add = icfg.params[1]
+        M.add_gold(player, add * num)
     end
 }
 M.use_item = function(player, itemid, num)
