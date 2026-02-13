@@ -1,9 +1,12 @@
-include "config.path"
+include "config.include"
 
 cluster_port = 10020
 server_name = "center"
 server_mark = server_name
 
 thread = 1
---logger = "run/" .. server_mark .. ".log"
---daemon = "run/" .. server_mark .. ".pid"
+
+if $DAEMON then
+    logger = "run/" .. server_mark .. ".log"
+    daemon = "run/" .. server_mark .. ".pid"
+end

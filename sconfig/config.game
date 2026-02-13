@@ -1,4 +1,4 @@
-include "config.path"
+include "config.include"
 
 debug_console_port = 10010
 cluster_port = 10011
@@ -9,5 +9,8 @@ server_mark = server_name .. server_id
 gametype = 1 --1local 2private 3public
 
 thread = 6
---logger = "run/" .. server_mark .. ".log"
---daemon = "run/" .. server_mark .. ".pid"
+
+if $DAEMON then
+    logger = "run/" .. server_mark .. ".log"
+    daemon = "run/" .. server_mark .. ".pid"
+end

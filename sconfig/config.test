@@ -1,4 +1,4 @@
-include "config.path"
+include "config.include"
 
 debug_console_port = 10050
 server_name = "test"
