@@ -205,10 +205,6 @@ struct Pack {
   lua_State* L;
   Msgpack pack_;
   uint32_t dep_;
-  struct Tmp {
-    Pack* pack_;
-    int index_;
-  };
 
   void pack(int index);
   uint32_t table_len(int index);
@@ -233,27 +229,29 @@ void Pack::pack_table(int index) {
   }
   int32_t rawlen = lua_rawlen(L, index);
   int32_t tablen = table_len(index);
+  if (index < 0) {
+    index = lua_gettop(L) + index + 1;
+  }
 
-  Tmp tmp = {.pack_ = this, .index_ = index};
   if (rawlen == tablen) {
     pack_.pack_arr_head(tablen);
     lua_traversal(
         L, index,
         [](void* p) {
-          Tmp& tmp = *(Tmp*)p;
-          tmp.pack_->pack(tmp.index_ + 2);
+          Pack* pack = (Pack*)p;
+          pack->pack(-1);
         },
-        &tmp);
+        this);
   } else {
     pack_.pack_map_head(tablen);
     lua_traversal(
         L, index,
         [](void* p) {
-          Tmp& tmp = *(Tmp*)p;
-          tmp.pack_->pack(tmp.index_ + 1);
-          tmp.pack_->pack(tmp.index_ + 2);
+          Pack* pack = (Pack*)p;
+          pack->pack(-2);
+          pack->pack(-1);
         },
-        &tmp);
+        this);
   }
   --dep_;
 }

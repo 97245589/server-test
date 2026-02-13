@@ -132,6 +132,7 @@ local msgpack = function()
         },
         arr = { 1, 2, 3 },
         arr_obj = { { val = 10 }, { val = 20 } },
+        map_test = { 1, 2, [100] = 200 },
         map = {
             [100] = {
                 id = 100,
@@ -145,6 +146,7 @@ local msgpack = function()
             }
         }
     }
+    print(dump(skynet.unpack(skynet.packstring(obj))))
     local bin = msgpack.encode(obj)
     local nobj = msgpack.decode(bin)
     print(dump(nobj))
