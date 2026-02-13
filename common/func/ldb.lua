@@ -3,22 +3,33 @@ local skynet = require "skynet"
 local mode = ...
 
 if mode == "child" then
-    -- del keys hkeys hset hget hdel compact
+    local print = skynet.error
+    -- del keys hkeys hmset hmget hdel compact
     skynet.start(function()
         local leveldb = require "lgame.leveldb"
-        local pdb
+        local pdb = leveldb.create("db/" .. skynet.getenv("server_mark"))
+        local raddr = skynet.newservice("common/func/ldbr")
+        skynet.send(raddr, "lua", "pdb", pdb)
 
         skynet.dispatch("lua", function(_, _, cmd, ...)
-            if not pdb then
-                pdb = leveldb.create("db/" .. skynet.getenv("server_mark"))
+            if cmd == "raddr" then
+                skynet.retpack(raddr)
+            else
+                -- print("write", cmd, ...)
+                skynet.retpack(leveldb[cmd](pdb, ...))
             end
-            skynet.retpack(leveldb[cmd](pdb, ...))
         end)
     end)
 else
-    local addr = skynet.uniqueservice("common/func/ldb", "child")
+    local waddr = skynet.uniqueservice("common/func/ldb", "child")
+    local raddr = skynet.call(waddr, "lua", "raddr")
+    local wcmds = { del = 1, hdel = 1, hmset = 1, compact = 1 }
 
     return function(cmd, ...)
-        return skynet.call(addr, "lua", cmd, ...)
+        if wcmds[cmd] then
+            skynet.call(waddr, "lua", cmd, ...)
+        else
+            return skynet.call(raddr, "lua", cmd, ...)
+        end
     end
 end
