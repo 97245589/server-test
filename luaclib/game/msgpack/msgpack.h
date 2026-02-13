@@ -110,19 +110,22 @@ void Msgpack::pack_double(double val) {
 }
 
 void Msgpack::pack_string(const char* p, uint32_t len) {
-  if (len < 256) {
-    uint8_t m = 0xc4;
+  if (len < 32) {
+    uint8_t m = 0xa0 + len;
+    write(&m, sizeof(m));
+  } else if (len < 256) {
+    uint8_t m = 0xd9;
     write(&m, sizeof(m));
     uint8_t v = len;
     write(&v, sizeof(v));
   } else if (len < 65536) {
-    uint8_t m = 0xc5;
+    uint8_t m = 0xda;
     write(&m, sizeof(m));
     uint16_t v = len;
     v = endian_change(v);
     write(&v, sizeof(v));
   } else {
-    uint8_t m = 0xc6;
+    uint8_t m = 0xdb;
     write(&m, sizeof(m));
     uint32_t v = len;
     v = endian_change(v);
