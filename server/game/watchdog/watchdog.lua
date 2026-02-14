@@ -12,6 +12,7 @@ skynet.call(gate, "lua", "open", {
     maxclient = 8888,
     nodelay = true
 })
+rpc.send_all("watchdata", "gate", gate)
 
 local acc_secret = {}
 local acc_fd = {}
@@ -55,10 +56,9 @@ cmds.fd_acc = function(fd, acc)
     fd_acc[fd] = acc
 end
 
-cmds.select_player = function(fd, acc, playerid)
-    -- print("select_player", fd, acc, playerid)
-    rpc.send_id("player", "player_enter", playerid, fd, acc, gate)
-end
+-- cmds.select_player = function(fd, acc, playerid)
+--     rpc.send_id("player", "player_enter", playerid, fd, acc, gate)
+-- end
 
 cmds.close_conn = close_conn
 

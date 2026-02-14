@@ -20,7 +20,7 @@ end
 local host, req_pack = load_proto()
 
 local session = 0
-local request = function(fd, name, args)
+local send_req = function(fd, name, args)
     session = session + 1
     if session < 1 or session > 120 then
         session = 1
@@ -30,7 +30,7 @@ local request = function(fd, name, args)
     return name, session
 end
 
-local recv_data = function(fd)
+local get_res = function(fd)
     local lendata = socket.read(fd, 2)
     local len = lendata:byte(1) * 256 + lendata:byte(2)
     local msg = socket.read(fd, len)
@@ -50,23 +50,23 @@ local login = function(args)
         local fd = socket.open(loginhost)
         local cpri = crypt.randomkey()
         local cpub = crypt.dhexchange(cpri)
-        request(fd, "exchange", {
+        send_req(fd, "exchange", {
             cpub = cpub
         })
-        local _, _, res = recv_data(fd)
+        local _, _, res = get_res(fd)
         local spub = res.spub
         secret = crypt.dhsecret(spub, cpri)
         print("exchange succ get secret", secret)
 
-        request(fd, "login_verify", {
+        send_req(fd, "login_verify", {
             acc = acc,
             acctoken = crypt.desencode(secret, acc)
         })
-        recv_data(fd)
-        request(fd, "select_gameserver", {
+        get_res(fd)
+        send_req(fd, "select_gameserver", {
             serverid = serverid
         })
-        recv_data(fd)
+        get_res(fd)
         socket.close(fd)
         skynet.sleep(10)
     end
@@ -74,15 +74,15 @@ local login = function(args)
     local game_server = function()
         print("conn game server")
         local fd = socket.open(gamehost)
-        request(fd, "verify", {
+        send_req(fd, "verify", {
             acc = acc,
             acctoken = crypt.desencode(secret, acc)
         })
-        recv_data(fd)
-        request(fd, "select_player", {
+        get_res(fd)
+        send_req(fd, "select_player", {
             playerid = playerid
         })
-        recv_data(fd)
+        get_res(fd)
         skynet.sleep(2)
         return fd
     end
@@ -91,7 +91,7 @@ local login = function(args)
 end
 
 return {
-    request = request,
-    recv_data = recv_data,
+    send_req = send_req,
+    get_res = get_res,
     login = login,
 }

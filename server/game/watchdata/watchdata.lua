@@ -4,16 +4,20 @@ local rpc = require "server.game.rpc"
 local socket = require "skynet.socket"
 local crypt = require "skynet.crypt"
 
+local gate
 local gametype = tonumber(skynet.getenv("gametype"))
 local proto = require "common.func.proto"
 local host = proto()
+
+cmds.gate = function(v)
+    gate = v
+end
 
 local close = function(fd)
     rpc.send("watchdog", "close_conn", fd)
 end
 
 local handle = {}
-
 handle.verify = function(args, _, fd)
     local acc = args.acc
     if not acc then
@@ -39,7 +43,6 @@ handle.verify = function(args, _, fd)
         code = 0
     }
 end
-
 handle.select_player = function(args, acc, fd)
     if not acc then
         return
@@ -48,7 +51,7 @@ handle.select_player = function(args, acc, fd)
     if not playerid then
         return
     end
-    rpc.send("watchdog", "select_player", fd, acc, playerid)
+    rpc.send_id("player", "player_enter", playerid, fd, acc, gate)
     return {
         code = 0
     }
@@ -71,8 +74,6 @@ local req = function(fd, msg, acc)
     socket.write(fd, string.pack(">s2", res(ret)))
     return true
 end
-
-
 cmds.data = function(fd, msg, acc)
     local ret = req(fd, msg, acc)
     if not ret then

@@ -7,24 +7,24 @@ local skynet = require "skynet"
 local client = require "server.test.func.client"
 
 local login = client.login
-local recv_data = client.recv_data
-local request = client.request
+local get_res = client.get_res
+local send_req = client.send_req
 
 local conn = function(args)
     skynet.fork(function()
         local fd = login(args)
-        request(fd, "get_data", {})
+        send_req(fd, "get_data", {})
 
         -- skynet.fork(function()
         --     while true do
         --         skynet.sleep(100)
-        --         request(fd, "get_data", {})
+        --         send_req(fd, "get_data", {})
         --     end
         -- end)
 
         skynet.fork(function()
             while true do
-                print(fd, recv_data(fd))
+                print(fd, get_res(fd))
             end
         end)
     end)
