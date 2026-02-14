@@ -4,9 +4,29 @@ extern "C" {
 #include <cstdint>
 #include <cstring>
 
+#include "zstdwrap.h"
+
 struct Tool {
   static int crc16(lua_State*);
+  static int zstd_compress(lua_State*);
+  static int zstd_decompress(lua_State*);
 };
+
+int Tool::zstd_compress(lua_State* L) {
+  size_t len;
+  const char* p = luaL_checklstring(L, 1, &len);
+  std::string str = Zstdwrap::compress(p, len);
+  lua_pushlstring(L, str.data(), str.size());
+  return 1;
+}
+
+int Tool::zstd_decompress(lua_State* L) {
+  size_t len;
+  const char* p = luaL_checklstring(L, 1, &len);
+  std::string str = Zstdwrap::decompress(p, len);
+  lua_pushlstring(L, str.data(), str.size());
+  return 1;
+}
 
 int Tool::crc16(lua_State* L) {
   const uint16_t crc16tab[256] = {
@@ -53,7 +73,10 @@ int Tool::crc16(lua_State* L) {
 
 extern "C" {
 LUAMOD_API int luaopen_lgame_tool(lua_State* L) {
-  luaL_Reg l[] = {{"crc16", Tool::crc16}, {NULL, NULL}};
+  luaL_Reg l[] = {{"crc16", Tool::crc16},
+                  {"compress", Tool::zstd_compress},
+                  {"decompress", Tool::zstd_decompress},
+                  {NULL, NULL}};
   luaL_newlib(L, l);
   return 1;
 }

@@ -41,6 +41,6 @@ local test1 = function()
 end
 
 skynet.start(function()
-    test()
-    -- test1()
+    -- test()
+    test1()
 end)

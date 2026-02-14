@@ -5,6 +5,7 @@ local skynet = require "skynet"
 local encode_press = function()
     print("encode test ===")
     local msgpack = require "lgame.msgpack"
+    local ltool = require "lgame.tool"
     local sproto = require "sproto"
 
     local sp = sproto.parse [[
@@ -49,6 +50,14 @@ local encode_press = function()
         bin = skynet.packstring(obj)
     end
     print("skynetpack", skynet.now() - t, #bin)
+
+    skynet.sleep(1)
+    local t = skynet.now()
+    local cbin
+    for i = 1, n do
+        cbin = ltool.compress(bin)
+    end
+    print("zstd compress", skynet.now() - t, #cbin, #ltool.decompress(cbin))
 
     skynet.sleep(1)
     local t = skynet.now()
