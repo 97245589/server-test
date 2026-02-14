@@ -12,53 +12,54 @@ local close = function(fd)
     rpc.send("watchdog", "close_conn", fd)
 end
 
-local handle = {
-    verify = function(args, _, fd)
-        local acc = args.acc
-        if not acc then
-            return
-        end
-        if gametype ~= 1 then
-            local acctoken = args.acctoken
-            if not acctoken then
-                return
-            end
-            local secret = rpc.call("watchdog", "get_secret", acc)
-            -- print(acc, acctoken, secret)
-            if not secret then
-                return
-            end
-            if acctoken ~= crypt.desencode(secret, acc) then
-                return
-            end
-        end
+local handle = {}
 
-        rpc.send("watchdog", "fd_acc", fd, acc)
-        return {
-            code = 0
-        }
-    end,
-    select_player = function(args, acc, fd)
-        if not acc then
-            return
-        end
-        local playerid = args.playerid
-        if not playerid then
-            return
-        end
-        rpc.send("watchdog", "select_player", fd, acc, playerid)
-        return {
-            code = 0
-        }
+handle.verify = function(args, _, fd)
+    local acc = args.acc
+    if not acc then
+        return
     end
-}
+    if gametype ~= 1 then
+        local acctoken = args.acctoken
+        if not acctoken then
+            return
+        end
+        local secret = rpc.call("watchdog", "get_secret", acc)
+        -- print(acc, acctoken, secret)
+        if not secret then
+            return
+        end
+        if acctoken ~= crypt.desencode(secret, acc) then
+            return
+        end
+    end
+
+    rpc.send("watchdog", "fd_acc", fd, acc)
+    return {
+        code = 0
+    }
+end
+
+handle.select_player = function(args, acc, fd)
+    if not acc then
+        return
+    end
+    local playerid = args.playerid
+    if not playerid then
+        return
+    end
+    rpc.send("watchdog", "select_player", fd, acc, playerid)
+    return {
+        code = 0
+    }
+end
 
 local req = function(fd, msg, acc)
-    -- print("watchdata req", fd, msg, acc)
     local t, name, args, res = host:dispatch(msg)
     if not name then
         return
     end
+    -- print("watchdata req", name, dump(args))
     local func = handle[name]
     if not func then
         return

@@ -1,5 +1,6 @@
 local require = require
 local print = print
+local os = os
 local skynet = require "skynet"
 local socket = require "skynet.socket"
 local proto = require "common.func.proto"
@@ -72,7 +73,12 @@ local handle_req = function(fd, cmd, args, res)
         close_conn(fd)
         return
     end
-    local player = player_mgr.get_player(playerid)
+    local player = player_mgr.players[playerid]
+    if not player then
+        close_conn(fd)
+        return
+    end
+    player.gettm = os.time()
 
     local func = req[cmd]
     local ret = func(player, args)

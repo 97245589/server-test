@@ -15,6 +15,13 @@ local conn = function(args)
         local fd = login(args)
         request(fd, "get_data", {})
 
+        -- skynet.fork(function()
+        --     while true do
+        --         skynet.sleep(100)
+        --         request(fd, "get_data", {})
+        --     end
+        -- end)
+
         skynet.fork(function()
             while true do
                 print(fd, recv_data(fd))

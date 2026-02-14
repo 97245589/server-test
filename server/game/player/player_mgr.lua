@@ -1,88 +1,107 @@
 local os = os
+local print = print
 local table = table
 local pairs = pairs
+local ipairs = ipairs
 local next = next
-local setmetatable = setmetatable
-local rawget = rawget
-local rawset = rawset
 local db = require "common.func.ldb"
 local skynet = require "skynet"
+local squeue = require "skynet.queue"
 
-local M = {}
-local savefields = {
-    item = 1,
-    role = 1
-}
-
-local __meta = {
-    __index = function(player, k)
-        local init_func = M.init_func
-        local ifunc = init_func[k]
-        if not ifunc then
-            return
-        end
-
-        local vbin = player.__BIN[k]
-        local val
-        if vbin then
-            val = skynet.unpack(vbin)
-            player.__BIN[k] = nil
-        else
-            val = {}
-        end
-        rawset(player, k, val)
-        -- print("__metainit", player.id, k)
-        ifunc(player)
-        return rawget(player, k)
+local savefields = { "role", "item" }
+local fieldmark = {}
+for idx, field in ipairs(savefields) do
+    if fieldmark[field] then
+        print("err fieldmark repeated", field)
+    else
+        fieldmark[field] = 1
     end
-}
+end
+local field_mgrname = {}
 
 local players = {}
+local M = {}
 M.players = players
 
-local player_db = function(playerid)
-    -- local arr = db("hgetall", "pl" .. playerid)
-    if players[playerid] then
-        return players[playerid]
+local dbplayer = function(playerid, field)
+    local player = players[playerid]
+    if player then
+        if not player.part then
+            return player
+        elseif field and player[field] then
+            return player
+        end
     end
-    --[[
-    local bin_player = {}
-    if not next(arr) then
-        return
+    print("get db player", playerid, field)
+
+    if not player then
+        if not field then
+            players[playerid] = { id = playerid, saves = {} }
+            player = players[playerid]
+        else
+            players[playerid] = { id = playerid, saves = {}, part = 1 }
+            player = players[playerid]
+        end
     end
-    for i = 1, #arr do
-        local k = arr[i]
-        local vbin = arr[i+1]
-        bin_player[k] = vbin
+
+    local selectfields = {}
+    if field then
+        table.insert(selectfields, field)
+    else
+        player.part = nil
+        for idx, sfield in ipairs(savefields) do
+            if not player[sfield] then
+                table.insert(selectfields, sfield)
+            end
+        end
     end
-    ]]
-    local player = setmetatable({
-        __BIN = {},
-    }, __meta)
-    player.dirtys = {}
-    players[playerid] = player
+    local binarr = db("hmget", "pl" .. playerid, table.unpack(selectfields))
+    for idx, sfield in ipairs(selectfields) do
+        local vbin = binarr[idx]
+        player[sfield] = vbin and skynet.unpack(vbin) or {}
+        local ifunc = M.mgrs.inits[sfield]
+        -- print("part player initfunc test", sfield)
+        ifunc(player)
+    end
     return player
 end
 
-M.get_player = function(playerid)
-    local player = players[playerid] or player_db(playerid)
-    if not player then
+local cses = {}
+local CSNUM = 10
+for i = 1, CSNUM do
+    table.insert(cses, squeue())
+end
+M.get_player = function(playerid, field)
+    if field and not fieldmark[field] then
+        print("getplayer field err", playerid, field)
         return
     end
-    player.id = playerid
+    local player = players[playerid]
+    if player then
+        player.gettm = os.time()
+        if not player.part then
+            return player
+        elseif field and player[field] then
+            return player
+        end
+    end
+    local cs = cses[playerid % CSNUM + 1]
+    player = cs(dbplayer, playerid, field)
     player.gettm = os.time()
     return player
 end
 
 M.save_player = function(player)
-    local dirtys = player.dirtys
-    if not next(dirtys) then
+    local saves = player.saves
+    if not next(saves) then
         return
     end
     local arr = { "pl" .. player.id }
-    for k in pairs(dirtys) do
-        if savefields[k] and player[k] then
+    for k in pairs(saves) do
+        if fieldmark[k] and player[k] then
             table.insert(arr, k, skynet.packstring(player[k]))
+        else
+            print("player saves key err", k)
         end
     end
     -- db("hmset", table.unpack(arr))

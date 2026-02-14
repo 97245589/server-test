@@ -1,5 +1,7 @@
 local require = require
+local table = table
 local pairs = pairs
+local print = print
 local skynet = require "skynet"
 local cfg = require "common.func.cfg"
 local timerf = require "common.func.timer"
@@ -8,10 +10,12 @@ local player_mgr = require "server.game.player.player_mgr"
 local players = player_mgr.players
 
 local M = {}
+player_mgr.mgrs = M
 local cfgs = {}
 local inits = {}
+local mgrs = {}
+M.mgrs = mgrs
 M.inits = inits
-player_mgr.init_func = inits
 
 M.reload_cfg = function(cfgname)
     cfg.reload(cfgname, function(mnames)
@@ -22,7 +26,13 @@ M.reload_cfg = function(cfgname)
 end
 
 M.add_mgr = function(mgr, name)
+    if mgrs[name] then
+        print("err mgrname repeated", name)
+        return
+    end
+    mgrs[name] = mgr
     inits[name] = mgr.init
+
     if mgr.cfg then
         cfgs[name] = mgr.cfg
         cfg.cfg_func(name, mgr.cfg)

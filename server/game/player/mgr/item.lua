@@ -37,7 +37,6 @@ end
 M.add_gold = function(player, num)
     local item = player.item
     item.gold = item.gold + num
-    player.dirtys.item = 1
 end
 
 

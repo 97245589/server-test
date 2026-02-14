@@ -10,8 +10,7 @@ local req = client.req
 
 req.get_data = function(player)
     print("get_data", dump(player))
-    local pitem = player.item
-    print(dump(player))
+
     local ret = {
         code = 0,
     }
