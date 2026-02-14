@@ -54,6 +54,9 @@ local dbplayer = function(playerid, field)
                 table.insert(selectfields, sfield)
             end
         end
+        if not next(selectfields) then
+            return player
+        end
     end
     local binarr = db("hmget", "pl" .. playerid, table.unpack(selectfields))
     for idx, sfield in ipairs(selectfields) do
