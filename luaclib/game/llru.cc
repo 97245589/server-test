@@ -92,7 +92,9 @@ void Llru::meta(lua_State* L) {
 }
 
 int Llru::create(lua_State* L) {
-  uint32_t max = luaL_checkinteger(L, 1);
+  int max = luaL_checkinteger(L, 1);
+  if (max <= 0) return luaL_error(L, "lru create err");
+
   Lru* p = new Lru();
   p->max_ = max;
   Lru** pp = (Lru**)lua_newuserdata(L, sizeof(p));
@@ -104,7 +106,6 @@ int Llru::create(lua_State* L) {
 extern "C" {
 LUAMOD_API int luaopen_lgame_lru(lua_State* L) {
   luaL_Reg funcs[] = {{"create", Llru::create}, {NULL, NULL}};
-
   luaL_newlib(L, funcs);
   return 1;
 }
