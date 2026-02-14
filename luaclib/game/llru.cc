@@ -9,26 +9,25 @@ using namespace std;
 
 static const char* LLRU_META = "LLRU_META";
 struct Lru {
-  using idtype = int64_t;
-  list<idtype> ids_;
-  unordered_map<idtype, list<idtype>::iterator> it_;
+  list<int64_t> ids_;
+  unordered_map<int64_t, list<int64_t>::iterator> it_;
   uint32_t max_;
-  void update(const idtype& id, idtype& evi) {
+  bool update(const int64_t& id, int64_t& evi) {
     del(id);
     ids_.push_front(id);
     it_[id] = ids_.begin();
-    evict(evi);
+    return evict(evi);
   }
 
-  void evict(idtype& evi) {
-    if (ids_.size() <= max_) return;
-    auto it = ids_.rbegin();
-    evi = *it;
+  bool evict(int64_t& evi) {
+    if (ids_.size() <= max_) return false;
+    evi = ids_.back();
     it_.erase(evi);
     ids_.pop_back();
+    return true;
   }
 
-  void del(const idtype& id) {
+  void del(const int64_t id) {
     if (auto it = it_.find(id); it != it_.end()) {
       ids_.erase(it->second);
       it_.erase(it);
@@ -62,14 +61,12 @@ int Llru::update(lua_State* L) {
   Lru& lru = **pp;
   int64_t id = luaL_checkinteger(L, 2);
 
-  int64_t defval = -999999999;
-  int64_t evict = defval;
-  lru.update(id, evict);
-  if (evict == defval) {
-    return 0;
-  } else {
+  int64_t evict;
+  if (lru.update(id, evict)) {
     lua_pushinteger(L, evict);
     return 1;
+  } else {
+    return 0;
   }
 }
 
@@ -95,8 +92,7 @@ void Llru::meta(lua_State* L) {
 }
 
 int Llru::create(lua_State* L) {
-  int32_t max = luaL_checkinteger(L, 1);
-  if (max <= 0) return 0;
+  uint32_t max = luaL_checkinteger(L, 1);
   Lru* p = new Lru();
   p->max_ = max;
   Lru** pp = (Lru**)lua_newuserdata(L, sizeof(p));
