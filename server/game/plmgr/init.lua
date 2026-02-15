@@ -4,8 +4,7 @@ local start = require "common.service.start"
 local require_files = function()
     local mgrs = require "server.game.plmgr.mgrs"
     require "server.game.plmgr.player"
-    require "server.game.plmgr.actimpl"
-    require "server.game.plmgr.acttm"
+    require "server.game.plmgr.activity"
 
     mgrs.start_tick()
 end

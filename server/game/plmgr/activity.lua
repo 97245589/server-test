@@ -5,6 +5,8 @@ local cfgf = require "common.func.cfg"
 local time = require "server.game.plmgr.time"
 local enums = require "server.game.plmgr.enums"
 local rpc = require "server.game.rpc"
+local actimpl = require "server.game.plmgr.actimpl"
+
 local timer = mgrs.timer
 
 local actcfg = {
@@ -22,12 +24,14 @@ local actcfg = {
 
 local dbacttm
 local M = {}
-local impl = {}
-M.impl = impl
 
 M.init = function(dbdata)
-    dbdata.acttm = dbdata.acttm or {}
-    dbacttm = dbdata.acttm
+    dbdata.activity = dbdata.activity or {}
+    local dbactivity = dbdata.activity
+    dbactivity.acttm = dbactivity.acttm or {}
+    dbacttm = dbactivity.acttm
+    dbactivity.actdata = dbactivity.actdata or {}
+    actimpl.setdb(dbactivity.actdata)
 
     local tm = os.time()
     local init_one = function(actid, cfg)
@@ -64,9 +68,10 @@ M.init = function(dbdata)
             ret[actid] = act
         end
     end
-    rpc.send_all("player", "acts", ret)
+    rpc.send_all("player", "acttms", ret)
 end
 
+local impl = actimpl.impl
 local actopen = function(actid)
     local act = dbacttm[actid]
     if act.isopen then

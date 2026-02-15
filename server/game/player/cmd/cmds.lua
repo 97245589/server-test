@@ -1,10 +1,15 @@
 local require = require
 local cmds = require "common.service.cmds"
 local client = require "server.game.player.client"
-local act = require "server.game.player.mgr.act"
+local activity = require "server.game.player.mgr.activity"
+local player_mgr = require "server.game.player.player_mgr"
 
 cmds.player_enter = client.player_enter
 
-cmds.acts = act.acts
-cmds.actopen = act.actopen
-cmds.actclose = act.actclose
+cmds.acttms = activity.acttms
+cmds.actopen = activity.actopen
+cmds.actclose = activity.actclose
+
+cmds.player_role = function(playerid)
+    return player_mgr.get_player(playerid, "role")
+end

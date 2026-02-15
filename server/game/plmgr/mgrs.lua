@@ -4,7 +4,7 @@ local timerf = require "common.func.timer"
 local time = require "server.game.plmgr.time"
 
 local dbdata = {}
-local savefields = { "info", "player", "acttm", "actimpl" }
+local savefields = { "info", "player" }
 
 local load = function()
     local arrbin = db("hmget", "plmgr", table.unpack(savefields))

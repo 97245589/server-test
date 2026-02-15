@@ -8,7 +8,7 @@ local db = require "common.func.ldb"
 local skynet = require "skynet"
 local squeue = require "skynet.queue"
 
-local savefields = { "role", "item" }
+local savefields = { "role", "item", "activity" }
 local fieldmark = {}
 for idx, field in ipairs(savefields) do
     if fieldmark[field] then
@@ -32,11 +32,13 @@ local dbplayer = function(playerid, field)
             return player
         end
     end
-    print("get db player", playerid, field)
 
     local selectfields
     if field then
         selectfields = { field }
+        if not player and field ~= "role" then
+            table.insert(selectfields, 1, "role")
+        end
     else
         if player then
             selectfields = {}
@@ -54,6 +56,7 @@ local dbplayer = function(playerid, field)
         end
     end
 
+    print("get db player", playerid, table.unpack(selectfields))
     local binarr = db("hmget", "pl" .. playerid, table.unpack(selectfields))
 
     if player then
@@ -61,6 +64,12 @@ local dbplayer = function(playerid, field)
             player.part = nil
         end
     else
+        --[[
+        if not binarr[1] then
+            print("player get dbdata err no field role", playerid)
+            return
+        end
+        ]]
         players[playerid] = { id = playerid, saves = {} }
         player = players[playerid]
         if field then
@@ -70,10 +79,15 @@ local dbplayer = function(playerid, field)
 
     for idx, sfield in ipairs(selectfields) do
         local vbin = binarr[idx]
+        if player[sfield] then
+            print("set player dbdata err", playerid, field)
+            goto cont
+        end
         player[sfield] = vbin and skynet.unpack(vbin) or {}
         local ifunc = M.mgrs.inits[sfield]
         -- print("part player initfunc test", sfield)
         ifunc(player)
+        ::cont::
     end
 
     return player
@@ -110,12 +124,15 @@ M.save_player = function(player)
         return
     end
     local arr = { "pl" .. player.id }
+    print("saveplayer", player.id, dump(saves))
     for k in pairs(saves) do
         if fieldmark[k] and player[k] then
-            table.insert(arr, k, skynet.packstring(player[k]))
+            table.insert(arr, k)
+            table.insert(arr, skynet.packstring(player[k]))
         else
             print("player saves key err", k)
         end
+        saves[k] = nil
     end
     -- db("hmset", table.unpack(arr))
 end
