@@ -3,9 +3,9 @@ extern "C" {
 }
 #include <cstdint>
 #include <string>
+using namespace std;
 
 #include "tsl/htrie_map.h"
-using namespace std;
 
 using trie_map = tsl::htrie_map<char, int64_t>;
 static const char* META = "LTRIEMAP";
@@ -17,7 +17,24 @@ struct Ltriemap {
   static int insert(lua_State*);
   static int val(lua_State*);
   static int erase(lua_State*);
+  static int info(lua_State*);
 };
+
+int Ltriemap::info(lua_State* L) {
+  trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
+  trie_map& tmap = **pp;
+
+  lua_createtable(L, tmap.size() * 2, 0);
+  size_t i = 0;
+  for (auto it = tmap.begin(); it != tmap.end(); ++it) {
+    const string& key = it.key();
+    lua_pushlstring(L, key.data(), key.size());
+    lua_rawseti(L, -2, ++i);
+    lua_pushinteger(L, *it);
+    lua_rawseti(L, -2, ++i);
+  }
+  return 1;
+}
 
 int Ltriemap::val(lua_State* L) {
   trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
@@ -59,8 +76,11 @@ int Ltriemap::gc(lua_State* L) {
 
 void Ltriemap::meta(lua_State* L) {
   if (luaL_newmetatable(L, META)) {
-    luaL_Reg l[] = {
-        {"insert", insert}, {"erase", erase}, {"val", val}, {NULL, NULL}};
+    luaL_Reg l[] = {{"insert", insert},
+                    {"erase", erase},
+                    {"val", val},
+                    {"info", info},
+                    {NULL, NULL}};
     luaL_newlib(L, l);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, gc);
