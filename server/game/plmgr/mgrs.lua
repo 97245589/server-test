@@ -62,7 +62,6 @@ M.start_tick = function()
     local lastsavetm = os.time()
     skynet.fork(function()
         while true do
-            skynet.sleep(100)
             local tm = os.time()
             timer.expire(tm)
             for name, tickfunc in pairs(tickfuncs) do
@@ -72,6 +71,7 @@ M.start_tick = function()
                 lastsavetm = tm
                 -- save()
             end
+            skynet.sleep(100)
         end
     end)
 end
