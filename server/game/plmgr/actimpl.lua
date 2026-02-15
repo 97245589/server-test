@@ -13,7 +13,7 @@ local impl = acts.impl
 
 impl[100] = {}
 impl[100].open = function(act)
-    print("impl activity", dump(act))
+    -- print("impl activity", dump(act))
     if not dbactimpl[act.id] then
         dbactimpl[act.id] = {}
     end

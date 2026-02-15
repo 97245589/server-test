@@ -34,31 +34,40 @@ local dbplayer = function(playerid, field)
     end
     print("get db player", playerid, field)
 
-    if not player then
-        if not field then
-            players[playerid] = { id = playerid, saves = {} }
-            player = players[playerid]
+    local selectfields
+    if field then
+        selectfields = { field }
+    else
+        if player then
+            selectfields = {}
+            for idx, sfield in ipairs(savefields) do
+                if not player[sfield] then
+                    table.insert(selectfields, sfield)
+                end
+            end
+            if not next(selectfields) then
+                player.part = nil
+                return player
+            end
         else
-            players[playerid] = { id = playerid, saves = {}, part = 1 }
-            player = players[playerid]
+            selectfields = savefields
         end
     end
 
-    local selectfields = {}
-    if field then
-        table.insert(selectfields, field)
-    else
-        player.part = nil
-        for idx, sfield in ipairs(savefields) do
-            if not player[sfield] then
-                table.insert(selectfields, sfield)
-            end
+    local binarr = db("hmget", "pl" .. playerid, table.unpack(selectfields))
+
+    if player then
+        if not field then
+            player.part = nil
         end
-        if not next(selectfields) then
-            return player
+    else
+        players[playerid] = { id = playerid, saves = {} }
+        player = players[playerid]
+        if field then
+            player.part = 1
         end
     end
-    local binarr = db("hmget", "pl" .. playerid, table.unpack(selectfields))
+
     for idx, sfield in ipairs(selectfields) do
         local vbin = binarr[idx]
         player[sfield] = vbin and skynet.unpack(vbin) or {}
@@ -66,11 +75,12 @@ local dbplayer = function(playerid, field)
         -- print("part player initfunc test", sfield)
         ifunc(player)
     end
+
     return player
 end
 
 local cses = {}
-local CSNUM = 10
+local CSNUM = 5
 for i = 1, CSNUM do
     table.insert(cses, squeue())
 end

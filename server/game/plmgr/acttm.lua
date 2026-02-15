@@ -1,3 +1,5 @@
+local print = print
+local pairs = pairs
 local mgrs = require "server.game.plmgr.mgrs"
 local cfgf = require "common.func.cfg"
 local time = require "server.game.plmgr.time"
@@ -55,19 +57,14 @@ M.init = function(dbdata)
     for actid, cfg in pairs(actcfg) do
         init_one(actid, cfg)
     end
-end
 
-M.send = function()
-    local info = {}
-    for id, act in pairs(dbacttm) do
-        info[id] = {
-            id = act.id,
-            starttm = act.starttm,
-            endtm = act.endtm,
-            isopen = act.isopen
-        }
+    local ret = {}
+    for actid, act in pairs(dbacttm) do
+        if act.isopen then
+            ret[actid] = act
+        end
     end
-    rpc.send_all("player", "act_info", info)
+    rpc.send_all("player", "acts", ret)
 end
 
 local actopen = function(actid)
@@ -77,6 +74,7 @@ local actopen = function(actid)
     end
     act.isopen = true
 
+    rpc.send_all("player", "actopen", actid, act)
     if impl[actid] then
         impl[actid].open(act)
     end
@@ -86,8 +84,11 @@ local actclose = function(actid)
     local act = dbacttm[actid]
     print("acttm close", actid, act.starttm, act.endtm)
     dbacttm[actid] = nil
-    if impl[actid] then
-        impl[actid].close(act)
+    if act.isopen then
+        rpc.send_all("player", "actclose", actid, act)
+        if impl[actid] then
+            impl[actid].close(act)
+        end
     end
     local cfg = actcfg[actid]
     if not cfg then
