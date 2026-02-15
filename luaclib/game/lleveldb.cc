@@ -237,9 +237,9 @@ int Lleveldb::create(lua_State* L) {
   options.zstd_compression_level = 1;
   options.block_cache = leveldb::NewLRUCache(10 * 1024 * 1024);
   options.filter_policy = leveldb::NewBloomFilterPolicy(10);
-  options.write_buffer_size = 32 * 1024 * 1024;
-  options.max_file_size = 16 * 1024 * 1024;
-  options.block_size = 32 * 1024;
+  options.write_buffer_size = 20 * 1024 * 1024;
+  options.max_file_size = 10 * 1024 * 1024;
+  options.block_size = 20 * 1024;
   leveldb::Status status = leveldb::DB::Open(options, {pname, len}, &db);
 
   if (!status.ok()) {
