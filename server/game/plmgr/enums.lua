@@ -1,3 +1,6 @@
 return {
-    timer_test = 1
+    timer_activities = 1,
+    
+    activity_open = 1,
+    activity_close = 2,
 }

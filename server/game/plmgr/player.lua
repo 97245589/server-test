@@ -1,14 +1,6 @@
 local skynet = require "skynet"
 local mgrs = require "server.game.plmgr.mgrs"
 local db = require "common.func.ldb"
-local enums = require "server.game.plmgr.enums"
-
-local timer = mgrs.timer
-timer.handle[enums.timer_test] = function(...)
-end
-local add_timer = function(tm, cmd, ...)
-    timer.add(tm, cmd, ...)
-end
 
 local gameid = tonumber(skynet.getenv("server_id"))
 local player

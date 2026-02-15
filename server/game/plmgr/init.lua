@@ -2,8 +2,12 @@ local skynet = require "skynet"
 local start = require "common.service.start"
 
 local require_files = function()
-    require "server.game.plmgr.mgrs"
+    local mgrs = require "server.game.plmgr.mgrs"
     require "server.game.plmgr.player"
+    require "server.game.plmgr.actimpl"
+    require "server.game.plmgr.acttm"
+
+    mgrs.start_tick()
 end
 
 start(function()

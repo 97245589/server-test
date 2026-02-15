@@ -7,6 +7,7 @@ return function(cb)
     local M = {}
 
     M.add = function(id, tm, cmd, ...)
+        -- print("=== timer add", id, tm, cmd, ...)
         core:add(id, tm, skynet.packstring(cmd, ...))
     end
 
