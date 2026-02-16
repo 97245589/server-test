@@ -1,6 +1,9 @@
 return {
-    timer_activities = 1,
-    
-    activity_open = 1,
-    activity_close = 2,
+    timer_activity = 1,
+    timer_rank = 2,
+
+    open = 1,
+    close = 2,
+
+    ranktype_test = 1
 }

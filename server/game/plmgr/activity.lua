@@ -9,14 +9,13 @@ local actimpl = require "server.game.plmgr.actimpl"
 
 local timer = mgrs.timer
 
-local actcfg = {
+local __testactcfg = {
     [100] = {
         time = { year = 2026, month = 2, day = 13, hour = 6 },
         duration = { day = 3 },
-        next = { day = 4 }
     },
     [200] = {
-        server_start = { day = 3 },
+        server_start = { day = 0 },
         duration = { day = 3 },
         next = { day = 3 }
     },
@@ -50,15 +49,15 @@ M.init = function(dbdata)
             act = dbacttm[actid]
         end
         if act.endtm and tm >= act.endtm then
-            timer.add(act.endtm, enums.timer_activities, enums.activity_close, actid)
+            timer.add(act.endtm, enums.timer_activity, enums.close, actid)
             return
         end
 
         -- print("actstartend", act.id, time.format(act.starttm), time.format(act.endtm))
-        timer.add(act.starttm, enums.timer_activities, enums.activity_open, actid)
-        timer.add(act.endtm, enums.timer_activities, enums.activity_close, actid)
+        timer.add(act.starttm, enums.timer_activity, enums.open, actid)
+        timer.add(act.endtm, enums.timer_activity, enums.close, actid)
     end
-    for actid, cfg in pairs(actcfg) do
+    for actid, cfg in pairs(__testactcfg) do
         init_one(actid, cfg)
     end
 
@@ -95,7 +94,7 @@ local actclose = function(actid)
             impl[actid].close(act)
         end
     end
-    local cfg = actcfg[actid]
+    local cfg = __testactcfg[actid]
     if not cfg then
         return
     end
@@ -110,14 +109,14 @@ local actclose = function(actid)
         isopen = false
     }
 
-    timer.add(starttm, enums.timer_activities, enums.activity_open, actid)
-    timer.add(endtm, enums.timer_activities, enums.activity_close, actid)
+    timer.add(starttm, enums.timer_activity, enums.open, actid)
+    timer.add(endtm, enums.timer_activity, enums.close, actid)
 end
 
-timer.handle[enums.timer_activities] = function(m, actid)
-    if m == enums.activity_open then
+timer.handle[enums.timer_activity] = function(m, actid)
+    if m == enums.open then
         actopen(actid)
-    elseif m == enums.activity_close then
+    elseif m == enums.close then
         actclose(actid)
     else
         print("timer acttm mark err", m)
