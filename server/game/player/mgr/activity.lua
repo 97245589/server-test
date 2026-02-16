@@ -15,15 +15,15 @@ local actopen = function(player, pacttm, pactdata, actid, atm)
     }
     player.saves.activity = 1
     if actimpl[actid] then
-        actimpl[actid].open(player, pactdata)
+        actimpl[actid].open(player, pactdata, atm)
     end
 end
 
-local actclose = function(player, pacttm, pactdata, actid)
+local actclose = function(player, pacttm, pactdata, actid, ptm)
     pacttm[actid] = nil
     player.saves.activity = 1
     if actimpl[actid] then
-        actimpl[actid].close(player, pactdata)
+        actimpl[actid].close(player, pactdata, ptm)
     end
 end
 
@@ -38,7 +38,7 @@ M.init = function(player)
     for actid, ptm in pairs(pacttm) do
         local atm = acttm[actid]
         if not atm or atm.starttm ~= ptm.starttm then
-            actclose(player, pacttm, pactdata, actid)
+            actclose(player, pacttm, pactdata, actid, ptm)
         end
     end
 
@@ -66,7 +66,7 @@ M.actopen = function(actid, act)
         local pacttm = pactivity.acttm
         local pactdata = pactivity.actdata
         if pacttm[actid] then
-            print("activity open err already cover", actid)
+            print("activity open err already cover", playerid, actid)
         end
         actopen(player, pacttm, pactdata, actid, act)
         ::cont::
@@ -85,9 +85,9 @@ M.actclose = function(actid, ract)
         local pactdata = pactivity.actdata
         local ptm = pacttm[actid]
         if not ptm or ptm.starttm ~= ract.starttm then
-            print("activity close err already cover", actid)
+            print("activity close err already cover", playerid, actid)
         end
-        actclose(player, pacttm, pactdata, actid)
+        actclose(player, pacttm, pactdata, actid, ptm)
         ::cont::
     end
 end
