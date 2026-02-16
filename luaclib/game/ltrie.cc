@@ -2,6 +2,7 @@ extern "C" {
 #include "lauxlib.h"
 }
 #include <cstdint>
+#include <sstream>
 #include <string>
 using namespace std;
 
@@ -17,23 +18,60 @@ struct Ltriemap {
   static int insert(lua_State*);
   static int val(lua_State*);
   static int erase(lua_State*);
-  static int info(lua_State*);
+  static int seri(lua_State*);
+  static int deseri(lua_State*);
+  static int dump(lua_State*);
 };
 
-int Ltriemap::info(lua_State* L) {
+int Ltriemap::dump(lua_State* L) {
   trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
   trie_map& tmap = **pp;
-
-  lua_createtable(L, tmap.size() * 2, 0);
-  size_t i = 0;
+  ostringstream oss;
+  oss << "trie dump: " << tmap.size() << endl;
   for (auto it = tmap.begin(); it != tmap.end(); ++it) {
     const string& key = it.key();
-    lua_pushlstring(L, key.data(), key.size());
-    lua_rawseti(L, -2, ++i);
-    lua_pushinteger(L, *it);
-    lua_rawseti(L, -2, ++i);
+    oss << key << ":" << *it << " ";
   }
+  const string& ret = oss.str();
+  lua_pushlstring(L, ret.data(), ret.size());
   return 1;
+}
+
+int Ltriemap::seri(lua_State* L) {
+  trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
+  trie_map& tmap = **pp;
+  string buff;
+
+  for (auto it = tmap.begin(); it != tmap.end(); ++it) {
+    const string& key = it.key();
+    int64_t v = *it;
+    uint32_t len = key.size();
+    buff.append((const char*)&len, sizeof(len));
+    buff.append(key.data(), key.size());
+    buff.append((const char*)&v, sizeof(v));
+  }
+  lua_pushlstring(L, buff.data(), buff.size());
+  return 1;
+}
+
+int Ltriemap::deseri(lua_State* L) {
+  trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
+  trie_map& tmap = **pp;
+  size_t len;
+  const char* p = luaL_checklstring(L, 2, &len);
+
+  const char* pstart = p;
+  const char* pend = p + len;
+  while (pstart < pend) {
+    uint32_t len = *(uint32_t*)pstart;
+    pstart += sizeof(len);
+    const char* pstr = pstart;
+    pstart += len;
+    int64_t id = *(int64_t*)pstart;
+    pstart += sizeof(id);
+    tmap.insert({pstr, len}, id);
+  }
+  return 0;
 }
 
 int Ltriemap::val(lua_State* L) {
@@ -76,10 +114,8 @@ int Ltriemap::gc(lua_State* L) {
 
 void Ltriemap::meta(lua_State* L) {
   if (luaL_newmetatable(L, META)) {
-    luaL_Reg l[] = {{"insert", insert},
-                    {"erase", erase},
-                    {"val", val},
-                    {"info", info},
+    luaL_Reg l[] = {{"insert", insert}, {"erase", erase},   {"val", val},
+                    {"seri", seri},     {"deseri", deseri}, {"dump", dump},
                     {NULL, NULL}};
     luaL_newlib(L, l);
     lua_setfield(L, -2, "__index");

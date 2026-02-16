@@ -99,9 +99,16 @@ local rank = function()
         for i = 1, 10 do
             core:add(i, i * 10, 0)
         end
+        core:add(7, 200, 0)
+        -- core:add(3, 100, 0)
         print(dump(core:info(3, 5)))
         print(dump(core:info(1, 10)))
         print(core:order(1), core:order(8))
+
+        local bin   = core:seri()
+        local ncore = lrank.create(5)
+        ncore:deseri(bin)
+        print(dump(ncore:info(1, 10)))
     end
     test()
 
@@ -111,20 +118,35 @@ local rank = function()
         for i = 1, 1000000 do
             core:add(random(2000), random(20000), i)
         end
-        print(skynet.now() - t)
+        print("add", skynet.now() - t)
 
         local t = skynet.now()
         for i = 1, 10000 do
             local arr = core:info(1, 1000)
         end
-        print(skynet.now() - t, #core:info(1, 1000))
+        print("info", skynet.now() - t, #core:info(1, 1000))
 
         local t = skynet.now()
-        local order = 0
+        local order, score
         for i = 1, 3000000 do
-            order = core:order(1000)
+            order, score = core:order(1000)
         end
-        print(skynet.now() - t, order)
+        print("order", skynet.now() - t, order, score)
+
+        local bin
+        local t = skynet.now()
+        for i = 1, 10000 do
+            bin = core:seri(1, 1000)
+        end
+        print("seri", skynet.now() - t, #bin)
+
+        local ncore
+        local t = skynet.now()
+        for i = 1, 3000 do
+            ncore = lrank.create(1000)
+            ncore:deseri(bin)
+        end
+        print("deseri", skynet.now() - t, #ncore:info(1, 1000))
     end
     press()
 end
@@ -164,21 +186,49 @@ end
 local trie = function()
     print("trie test")
     local trie = require "lgame.trie"
-    local core = trie.create()
+    local test = function()
+        local core = trie.create()
 
-    for i = 1, 10 do
-        core:insert(i, i)
-    end
-    core:erase(5)
-    print(core:val(5), core:val(10))
+        for i = 1, 10 do
+            core:insert(i, i * 100)
+        end
+        core:erase(5)
+        core:erase(1)
+        print(core:val(5), core:val(10))
 
-    local bin = core:seri()
-    print(#bin)
-    local ncore = trie.create()
-    ncore:deseri(bin)
-    for i = 1, 10 do
-        print(i, ncore:val(i))
+        local bin = core:seri()
+        print(#bin)
+        local ncore = trie.create()
+        ncore:deseri(bin)
+        print(ncore:dump())
     end
+    test()
+
+    local press = function()
+        local core = trie.create()
+
+        local t = skynet.now()
+        for i = 1, 100000 do
+            core:insert(i, i)
+        end
+        print(skynet.now() - t)
+
+        local t = skynet.now()
+        local bin
+        for i = 1, 100 do
+            bin = core:seri()
+        end
+        print(skynet.now() - t, #bin)
+
+        local t = skynet.now()
+        local ncore
+        for i = 1, 100 do
+            ncore = trie.create()
+            ncore:deseri(bin)
+        end
+        print(skynet.now() - t, #ncore:seri())
+    end
+    press()
 end
 
 local crc = function()
@@ -224,6 +274,6 @@ skynet.start(function()
     -- rank()
     -- lru()
     -- msgpack()
-    -- trie()
-    encode_press()
+    trie()
+    -- encode_press()
 end)

@@ -4,7 +4,7 @@ local timerf = require "common.func.timer"
 local time = require "server.game.plmgr.time"
 
 local dbdata = {}
-local savefields = { "info", "player" }
+local savefields = { "info", "player", "activity" }
 
 local load = function()
     local arrbin = db("hmget", "plmgr", table.unpack(savefields))
@@ -21,14 +21,12 @@ end
 load()
 
 local M = {}
-local tickfuncs = {}
+local ticksave = {}
 M.add_mgr = function(mgr, name)
     if mgr.init then
         mgr.init(dbdata)
     end
-    if mgr.tick then
-        tickfuncs[name] = mgr.tick
-    end
+    ticksave[name] = mgr.ticksave
 end
 
 local timerhandle = {}
@@ -52,11 +50,13 @@ M.start_tick = function()
     local save = function()
         local arr = { "plmgr" }
         for idx, field in ipairs(savefields) do
-            print("plmgr save", field)
-            table.insert(arr, field)
-            table.insert(arr, skynet.packstring(dbdata[field]))
+            if field and dbdata[field] then
+                table.insert(arr, field)
+                table.insert(arr, skynet.packstring(dbdata[field]))
+                -- print("plmgr field", field, dump(dbdata[field]))
+            end
         end
-        db("hmset", table.unpack(arr))
+        -- db("hmset", table.unpack(arr))
     end
 
     local lastsavetm = os.time()
@@ -64,12 +64,12 @@ M.start_tick = function()
         while true do
             local tm = os.time()
             timer.expire(tm)
-            for name, tickfunc in pairs(tickfuncs) do
-                tickfunc(tm)
-            end
             if tm - lastsavetm > 30 then
                 lastsavetm = tm
-                -- save()
+                save()
+                for _, func in pairs(ticksave) do
+                    func()
+                end
             end
             skynet.sleep(100)
         end

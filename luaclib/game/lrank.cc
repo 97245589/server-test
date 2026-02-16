@@ -6,6 +6,7 @@ extern "C" {
 #include <ext/pb_ds/assoc_container.hpp>
 #include <ext/pb_ds/tree_policy.hpp>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 
 using namespace std;
@@ -50,10 +51,12 @@ struct Rank {
     ranks_.erase(lastit);
   }
 
-  int32_t get_order(const int64_t id) {
+  tuple<int32_t, int64_t> get_order(const int64_t id) {
     auto it = id_it_.find(id);
-    if (it == id_it_.end()) return -1;
-    return ranks_.order_of_key(*it->second) + 1;
+    if (it == id_it_.end()) return make_tuple(-1, 0);
+    auto& val = *it->second;
+    int32_t order = ranks_.order_of_key(val) + 1;
+    return make_tuple(order, val.score_);
   }
 };
 
@@ -66,7 +69,39 @@ struct Lrank {
   static int add(lua_State*);
   static int order(lua_State*);
   static int info(lua_State*);
+  static int seri(lua_State*);
+  static int deseri(lua_State*);
 };
+
+int Lrank::seri(lua_State* L) {
+  Rank** pp = (Rank**)luaL_checkudata(L, 1, META);
+  Rank& rank = **pp;
+
+  auto& ranks = rank.ranks_;
+  string buff;
+  buff.reserve(1024 * 2);
+  for (auto& ele : ranks) {
+    buff.append((const char*)&ele, sizeof(ele));
+  }
+  lua_pushlstring(L, buff.data(), buff.size());
+  return 1;
+}
+
+int Lrank::deseri(lua_State* L) {
+  Rank** pp = (Rank**)luaL_checkudata(L, 1, META);
+  Rank& rank = **pp;
+  size_t len;
+  const char* p = luaL_checklstring(L, 2, &len);
+
+  const char* pstart = p;
+  const char* pend = p + len;
+  while (pstart < pend) {
+    Rank::Rankele ele = *(Rank::Rankele*)pstart;
+    rank.add(ele);
+    pstart += sizeof(ele);
+  }
+  return 0;
+}
 
 int Lrank::info(lua_State* L) {
   Rank** pp = (Rank**)luaL_checkudata(L, 1, META);
@@ -83,8 +118,8 @@ int Lrank::info(lua_State* L) {
     lua_rawseti(L, -2, ++c);
     lua_pushinteger(L, it->score_);
     lua_rawseti(L, -2, ++c);
-    lua_pushinteger(L, it->tm_);
-    lua_rawseti(L, -2, ++c);
+    // lua_pushinteger(L, it->tm_);
+    // lua_rawseti(L, -2, ++c);
   }
   return 1;
 }
@@ -94,10 +129,11 @@ int Lrank::order(lua_State* L) {
   Rank& rank = **pp;
 
   int64_t id = luaL_checkinteger(L, 2);
-  int32_t order = rank.get_order(id);
+  auto [order, score] = rank.get_order(id);
   if (order <= 0) return 0;
   lua_pushinteger(L, order);
-  return 1;
+  lua_pushinteger(L, score);
+  return 2;
 }
 
 int Lrank::add(lua_State* L) {
@@ -119,8 +155,8 @@ int Lrank::gc(lua_State* L) {
 
 void Lrank::meta(lua_State* L) {
   if (luaL_newmetatable(L, META)) {
-    luaL_Reg l[] = {
-        {"add", add}, {"order", order}, {"info", info}, {NULL, NULL}};
+    luaL_Reg l[] = {{"add", add},   {"order", order},   {"info", info},
+                    {"seri", seri}, {"deseri", deseri}, {NULL, NULL}};
     luaL_newlib(L, l);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, gc);

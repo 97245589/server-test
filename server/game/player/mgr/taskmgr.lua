@@ -95,11 +95,11 @@ M.count_task = function(player, task_obj, task_cfg, eventarr)
         end
         if task.status ~= enums.task_unfinish then
             marks[emark][taskid] = nil
-            if not next(marks[emark]) then
-                marks[emark] = nil
-            end
         end
         ::cont::
+    end
+    if not next(marks[emark]) then
+        marks[emark] = nil
     end
     return changedtask
 end

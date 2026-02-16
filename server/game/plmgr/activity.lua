@@ -124,5 +124,5 @@ timer.handle[enums.timer_activities] = function(m, actid)
     end
 end
 
-mgrs.add_mgr(M, "acttm")
+mgrs.add_mgr(M, "activity")
 return M
