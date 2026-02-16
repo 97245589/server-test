@@ -116,8 +116,7 @@ M.add = function(name, triggercb)
         return
     end
     if taskcbs[name] then
-        print("player taskmgr add err", name)
-        return
+        print("player taskmgr add err already cover", name)
     end
     taskcbs[name] = triggercb
 end
