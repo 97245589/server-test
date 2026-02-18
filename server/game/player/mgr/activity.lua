@@ -14,7 +14,6 @@ local actopen = function(player, pacttm, pactdata, actid, atm)
         starttm = atm.starttm,
         endtm = atm.endtm,
     }
-    player.saves.activity = 1
     if actimpl[actid] then
         actimpl[actid].open(player, pactdata, atm)
     end
@@ -22,7 +21,6 @@ end
 
 local actclose = function(player, pacttm, pactdata, actid, ptm)
     pacttm[actid] = nil
-    player.saves.activity = 1
     if actimpl[actid] then
         actimpl[actid].close(player, pactdata, ptm)
     end
@@ -93,5 +91,5 @@ M.actclose = function(actid, ract)
     end
 end
 
-mgrs.add_mgr(M, "activity")
+mgrs.add_mgr(M, "activity", 2)
 return M

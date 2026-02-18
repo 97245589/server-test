@@ -8,6 +8,7 @@ local test = function()
     local db = require "common.func.ldb"
     db("hmset", 10, "hello10", "world10")
     db("hmset", 1, "hello", "world", 10, 11, 20, 21)
+    print(db("hget", 1, "hello"), db("hget", 1, 30))
     printt(db("hgetall", 1))
     printt(db("hmget", 1, 10, 30, "hello"))
 

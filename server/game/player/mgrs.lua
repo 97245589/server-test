@@ -25,17 +25,29 @@ M.reload_cfg = function(cfgname)
     end)
 end
 
-M.add_mgr = function(mgr, name)
+M.add_mgr = function(mgr, name, initlevel)
+    initlevel = initlevel or 1
     if mgrs[name] then
         print("err mgrname repeated", name)
         return
     end
     mgrs[name] = mgr
-    inits[name] = mgr.init
+    if mgr.init then
+        inits[initlevel] = inits[initlevel] or {}
+        inits[initlevel][name] = mgr.init
+    end
 
     if mgr.cfg then
         cfgs[name] = mgr.cfg
         cfg.cfg_func(name, mgr.cfg)
+    end
+end
+
+M.init_player = function(player)
+    for idx, name_func in ipairs(inits) do
+        for name, func in pairs(name_func) do
+            func(player)
+        end
     end
 end
 
@@ -66,7 +78,7 @@ local save_kick = function(tm)
         end
     end
 
-    for i = 1, 10 do
+    for i = 1, 5 do
         if not next(playerids) then
             return
         end

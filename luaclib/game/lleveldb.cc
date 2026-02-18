@@ -9,14 +9,12 @@ extern "C" {
 #include <vector>
 using namespace std;
 
-#include "leveldb/cache.h"
 #include "leveldb/db.h"
 #include "leveldb/filter_policy.h"
 #include "leveldb/write_batch.h"
 
 struct Lleveldb {
   leveldb::DB* db_;
-  leveldb::Cache* cache_;
   const leveldb::FilterPolicy* bloom_;
 
   static int create(lua_State*);
@@ -27,6 +25,7 @@ struct Lleveldb {
   static int del(lua_State* L);
   static int hgetall(lua_State* L);
   static int hmget(lua_State* L);
+  static int hget(lua_State* L);
   static int hmset(lua_State* L);
   static int hdel(lua_State* L);
 
@@ -170,6 +169,28 @@ int Lleveldb::hmset(lua_State* L) {
   return 0;
 }
 
+int Lleveldb::hget(lua_State* L) {
+  if (!lua_islightuserdata(L, 1)) return luaL_error(L, "check lightuserdata");
+  Lleveldb* p = (Lleveldb*)lua_touserdata(L, 1);
+  leveldb::DB* db = p->db_;
+
+  size_t lk;
+  const char* pk = luaL_checklstring(L, 2, &lk);
+  string key(pk, lk);
+  size_t hk;
+  const char* phk = luaL_checklstring(L, 3, &hk);
+  string hkey(phk, hk);
+  string rkey = key + split_ + hkey;
+  string val;
+  leveldb::Status s = db->Get(leveldb::ReadOptions(), rkey, &val);
+  if (s.ok()) {
+    lua_pushlstring(L, val.data(), val.size());
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
 int Lleveldb::hmget(lua_State* L) {
   if (!lua_islightuserdata(L, 1)) return luaL_error(L, "check lightuserdata");
   Lleveldb* p = (Lleveldb*)lua_touserdata(L, 1);
@@ -235,11 +256,8 @@ int Lleveldb::create(lua_State* L) {
   options.create_if_missing = true;
   options.compression = leveldb::kZstdCompression;
   options.zstd_compression_level = 1;
-  options.block_cache = leveldb::NewLRUCache(10 * 1024 * 1024);
+  options.block_size = 16 * 1024;
   options.filter_policy = leveldb::NewBloomFilterPolicy(10);
-  options.write_buffer_size = 32 * 1024 * 1024;
-  options.max_file_size = 16 * 1024 * 1024;
-  options.block_size = 32 * 1024;
   leveldb::Status status = leveldb::DB::Open(options, {pname, len}, &db);
 
   if (!status.ok()) {
@@ -247,7 +265,6 @@ int Lleveldb::create(lua_State* L) {
   }
   Lleveldb* p = new Lleveldb();
   p->db_ = db;
-  p->cache_ = options.block_cache;
   p->bloom_ = options.filter_policy;
   lua_pushlightuserdata(L, p);
   return 1;
@@ -257,7 +274,6 @@ int Lleveldb::release(lua_State* L) {
   if (!lua_islightuserdata(L, 1)) return luaL_error(L, "check lightuserdata");
   Lleveldb* p = (Lleveldb*)lua_touserdata(L, 1);
   delete p->db_;
-  delete p->cache_;
   delete p->bloom_;
   delete p;
   return 0;
@@ -265,12 +281,17 @@ int Lleveldb::release(lua_State* L) {
 
 extern "C" {
 LUAMOD_API int luaopen_lgame_leveldb(lua_State* L) {
-  luaL_Reg l[] = {
-      {"create", Lleveldb::create},   {"release", Lleveldb::release},
-      {"compact", Lleveldb::compact}, {"keys", Lleveldb::keys},
-      {"del", Lleveldb::del},         {"hgetall", Lleveldb::hgetall},
-      {"hmget", Lleveldb::hmget},     {"hmset", Lleveldb::hmset},
-      {"hdel", Lleveldb::hdel},       {NULL, NULL}};
+  luaL_Reg l[] = {{"create", Lleveldb::create},
+                  {"release", Lleveldb::release},
+                  {"compact", Lleveldb::compact},
+                  {"keys", Lleveldb::keys},
+                  {"del", Lleveldb::del},
+                  {"hgetall", Lleveldb::hgetall},
+                  {"hget", Lleveldb::hget},
+                  {"hmget", Lleveldb::hmget},
+                  {"hmset", Lleveldb::hmset},
+                  {"hdel", Lleveldb::hdel},
+                  {NULL, NULL}};
   luaL_newlib(L, l);
   return 1;
 }

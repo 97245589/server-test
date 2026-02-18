@@ -10,11 +10,9 @@ for k, taskcfg in pairs(tasktype_activity) do
         open = function(player, pactdata, tmobj)
             pactdata[k] = {}
             taskmgr.init_task(player, pactdata[k], taskcfg)
-            player.saves.activity = 1
         end,
         close = function(player, pactdata)
             pactdata[k] = nil
-            player.saves.activity = 1
         end
     }
 end
