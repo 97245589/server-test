@@ -33,8 +33,7 @@ M.add_mgr = function(mgr, name, initlevel)
     end
     mgrs[name] = mgr
     if mgr.init then
-        inits[initlevel] = inits[initlevel] or {}
-        inits[initlevel][name] = mgr.init
+        table.insert(inits, mgr.init)
     end
 
     if mgr.cfg then
@@ -44,10 +43,8 @@ M.add_mgr = function(mgr, name, initlevel)
 end
 
 M.init_player = function(player)
-    for idx, name_func in ipairs(inits) do
-        for name, func in pairs(name_func) do
-            func(player)
-        end
+    for idx, func in ipairs(inits) do
+        func(player)
     end
 end
 

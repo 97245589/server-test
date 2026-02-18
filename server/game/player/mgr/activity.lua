@@ -91,5 +91,5 @@ M.actclose = function(actid, ract)
     end
 end
 
-mgrs.add_mgr(M, "activity", 2)
+mgrs.add_mgr(M, "activity")
 return M

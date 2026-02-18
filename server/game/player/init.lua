@@ -6,8 +6,8 @@ local require_files = function()
     require "server.game.player.client"
     require "server.game.player.mgrs"
 
-    require "server.game.player.cmd.cmds"
     require "server.game.player.cmd.req"
+    require "server.game.player.cmd.cmds"
     require "server.game.player.mgr.taskhandle"
 end
 
