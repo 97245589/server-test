@@ -67,6 +67,44 @@ local encode_press = function()
     print("msgpack", skynet.now() - t, #bin)
 end
 
+local skynetpack = function()
+    local map = {}
+    for i = 1, 100 do
+        map[i * 10] = {
+            id    = i * 10,
+            level = random(1000),
+            num   = random(10000),
+            hello = random(100000),
+            world = random(1000000)
+        }
+    end
+
+    local obj = {}
+    for i = 1, 50 do
+        obj[i] = map
+    end
+
+    local bin
+    skynet.sleep(1)
+    local t = skynet.now()
+    for i = 1, 1000 do
+        bin = skynet.packstring(obj)
+    end
+    print(skynet.now() - t, #bin)
+
+    skynet.sleep(1)
+    local t = skynet.now()
+    for i = 1, 1000 do
+        local arr = {}
+        for k, v in pairs(obj) do
+            table.insert(arr, k)
+            table.insert(arr, skynet.packstring(v))
+        end
+        bin = skynet.packstring(table.unpack(arr))
+    end
+    print(skynet.now() - t, #bin)
+end
+
 local lru = function()
     print("lru test ===")
     local lru = require "common.func.lru"
@@ -274,6 +312,7 @@ skynet.start(function()
     -- rank()
     -- lru()
     -- msgpack()
-    trie()
+    -- trie()
     -- encode_press()
+    skynetpack()
 end)

@@ -13,7 +13,7 @@ local time = require "server.game.plmgr.time"
 local __testrankcfg = {
     [1] = { type = 1, num = 100, permanent = 1 },
     [2] = { type = 2, num = 10, manual = 1 },
-    [3] = { type = 3, num = 1000, everyweek = { 1 }, duration = { day = 7 } }
+    [3] = { type = 3, num = 1000, everyweek = { weekday = 1 }, duration = { day = 7 } }
 }
 
 local timer = mgrs.timer
@@ -23,24 +23,30 @@ local preinfo
 local ranks = {}
 
 timer.handle[enums.timer_rank] = function(mark, id)
+    local cfg = __testrankcfg[id]
+    if not cfg.everyweek then
+        print("rank timer err", mark, id)
+        return
+    end
     if mark == enums.close then
-        local rank = ranks[id]
-        if not rank then
-            return
-        end
-        local cfg = __testrankcfg[id]
         preinfo[id] = preinfo[id] or {}
         local prearr = preinfo[id]
-        local idscorearr = rank.core:info(1, cfg.num)
-        local id_order = {}
-        for i = 1, #idscorearr, 2 do
-            local eid = idscorearr[1]
-            id_order[eid] = (i + 1) // 2
-        end
-
-        table.insert(preinfo[id], 1, { idscorearr, id_order })
+        local idscorearr, id_order = M.snapshot(id)
+        table.insert(prearr, 1, { idscorearr, id_order })
         if #prearr > 3 then
             table.remove(prearr)
+        end
+        ranks[id] = nil
+        local starttm = time.startendtm(cfg)
+        if starttm then
+            timer.add(starttm, enums.timer_rank, enums.open, id)
+        end
+    elseif mark == enums.open then
+        local starttm, endtm = time.startendtm(cfg)
+        if starttm and endtm then
+            M.create(id, starttm, endtm)
+        else
+            print("rank open err tm", id)
         end
     end
 end
@@ -54,67 +60,52 @@ local init = function()
         dbdata = skynet.unpack(dbdata)
         preinfo = dbdata.preinfo or {}
         local dbranks = dbdata.dbranks
-        local nowtm = os.time()
         for id, drank in pairs(dbranks) do
-            local cfg = __testrankcfg[id]
-            if not cfg or not cfg.num then
-                print("rank cfg err", id)
-                goto cont
-            end
-            local core = lrank.create(cfg.num)
-            core:deseri(drank.bin)
-            local nrank = {
-                id = id,
-                starttm = drank.starttm,
-                endtm = drank.endtm,
-                core = core,
-            }
-            if nowtm >= nrank.endtm then
-                timer.add(nrank.endtm, enums.timer_rank, enums.close, id)
-            end
-            ranks[id] = nrank
+            M.create(id, drank.starttm, drank.endtm, drank.bin)
             ::cont::
         end
     end
     initdb()
     for id, cfg in pairs(__testrankcfg) do
-        if cfg.manual then
+        if ranks[id] then
             goto cont
         end
-        if not ranks[id] then
+        if cfg.permanent then
             M.create(id)
+        elseif cfg.everyweek then
+            local starttm = time.startendtm(cfg)
+            if starttm then
+                timer.add(starttm, enums.timer_rank, enums.open, id)
+            end
         end
         ::cont::
     end
 end
 
-M.create = function(id)
+M.create = function(id, starttm, endtm, bin)
     local cfg = __testrankcfg[id]
     if not cfg or not cfg.num then
         print("rank cfg err no num", id)
-        return
-    end
-    if cfg.manual and cfg.everyweek then
-        print("rank cfg err manual everyweek exclu", id)
         return
     end
     if ranks[id] then
         print("createrank err exist", id)
         return
     end
-    print("create rank", id)
+    print("create rank", id, starttm, endtm)
 
     local nrank = {
         id = id,
+        starttm = starttm,
+        endtm = endtm,
         core = lrank.create(cfg.num)
     }
-    if cfg.everyweek then
-        local starttm, endtm = time.start_end(cfg)
-        nrank.starttm = starttm
-        nrank.endtm = endtm
-        timer.add(nrank.endtm, enums.timer_rank, enums.close, id)
+    if bin then
+        nrank.core:deseri(bin)
     end
-
+    if endtm then
+        timer.add(endtm, enums.timer_rank, enums.close, id)
+    end
     ranks[id] = nrank
 end
 
@@ -126,7 +117,7 @@ M.ticksave = function()
     print("rank tick save ===")
     local dbdata = {
         preinfo = preinfo,
-        ranks = ranks
+        ranks = {}
     }
 
     local dbranks = dbdata.ranks
@@ -168,6 +159,24 @@ M.info = function(ranktid, lb, ub, id)
         order = order,
         score = score
     }
+end
+
+M.snapshot = function(ranktid, lb, ub)
+    local rank = ranks[ranktid]
+    if not rank then
+        return
+    end
+    local cfg = __testrankcfg[ranktid]
+    local core = rank.core
+    lb = lb or 1
+    ub = ub or cfg.num
+    local idscorearr = core:info(lb, ub)
+    local id_order = {}
+    for i = 1, #idscorearr, 2 do
+        local eid = idscorearr[1]
+        id_order[eid] = (i + 1) // 2
+    end
+    return idscorearr, id_order
 end
 
 init()

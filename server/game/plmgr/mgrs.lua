@@ -16,7 +16,7 @@ local load = function()
     if not info.serverstart_tm then
         info.serverstart_tm = time.day_start()
     end
-    time.set_server_start_ts(info.serverstart_tm)
+    time.set_startts(info.serverstart_tm)
 end
 load()
 

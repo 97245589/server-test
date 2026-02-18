@@ -1,20 +1,23 @@
--- duration = {day=0,min=0,sec=0}
--- time = {year=0,month=0,day=0,hour=0,min=0,sec=0} duration={day=3} next={day=7}
--- server_start = {day=3}
--- server_startweek = {1, 3}
--- everyweek = {2, 6}, start={hour=10},after_startday={day=5},duration={day=1}
-local os, table, ipairs = os, table, ipairs
-local time_min = 60
-local time_hour = 60 * time_min
-local time_day = time_hour * 24
-local time_week = time_day * 7
+--[[
+duration = {day,min,sec}
+=====
+time = {year,month,day,hour,min,sec}, duration={day=3}
+afterstart = {day=3, hour=10}, duration={day=3}
+week = {startweek=1,weekday=3,hour=10}, duration = {}
+everyweek = {startweek=1,weekday=3,hour=10},duration={}
+]]
+local os = os
 
-local server_start_ts
+local startts
 
 local M = {}
 
-M.set_server_start_ts = function(ts)
-    server_start_ts = ts
+M.format = function(ts)
+    return os.date("%Y-%m-%d %H:%M:%S", ts)
+end
+
+M.set_startts = function(ts)
+    startts = ts
 end
 
 M.day_start = function(ts)
@@ -36,6 +39,18 @@ M.week_start = function(ts)
     return os.time(tb)
 end
 
+M.last_weekstart = function(ts)
+    local tb = os.date("*t", ts)
+    tb.hour, tb.min, tb.sec = 0, 0, 0
+    local weekday = tb.wday - 1
+    if 0 == weekday then
+        weekday = 7
+    end
+    tb.day = tb.day - (weekday - 1) - 7
+    tb.isdst = nil
+    return os.time(tb)
+end
+
 M.add_duration = function(ts, dtb)
     local tb = os.date("*t", ts)
     tb.day = tb.day + (dtb.day or 0)
@@ -46,168 +61,142 @@ M.add_duration = function(ts, dtb)
     return os.time(tb)
 end
 
-local get_start_end = function(cfg, startts, nowts)
-    if not cfg.duration then
-        return startts
-    end
-
-    local endts = M.add_duration(startts, cfg.duration)
-    if nowts < startts then
-        return startts, endts
-    elseif nowts >= startts and nowts < endts then
-        return startts, endts
-    end
-
-    if not cfg.next then
-        return
-    end
-
-    while true do
-        local next_start = M.add_duration(endts, cfg.next)
-        local next_end = M.add_duration(next_start, cfg.duration)
-        if nowts < next_start then
-            return next_start, next_end
-        elseif nowts >= next_start and nowts < endts then
-            return next_start, next_end
-        end
-        endts = next_end
+local parse_time = function(cinfo)
+    local tmtb = cinfo.time
+    tmtb.hour = tmtb.hour or 0
+    tmtb.min = tmtb.min or 0
+    tmtb.sec = tmtb.sec or 0
+    local stm = os.time(tmtb)
+    local etm = M.add_duration(stm, cinfo.duration)
+    if os.time() < etm then
+        return stm, etm
     end
 end
 
-local parse_tm = function(cfg, ts)
-    local tm_tb = cfg.time
-    tm_tb.hour = tm_tb.hour or 0
-
-    local startts = os.time(tm_tb)
-    return get_start_end(cfg, startts, ts)
-end
-
-local parse_server_start = function(cfg, ts)
-    local startts = M.add_duration(server_start_ts, cfg.server_start)
-    return get_start_end(cfg, startts, ts)
-end
-
-local parse_server_startweek = function(cfg, nowts)
-    if not cfg.duration then
-        return
+local parse_afterstart = function(cinfo)
+    local stm = M.add_duration(startts, cinfo.afterstart)
+    local etm = M.add_duration(stm, cinfo.duration)
+    if os.time() < etm then
+        return stm, etm
     end
-    local cserver_startweek = cfg.server_startweek
-    local serverweekstart = M.week_start(server_start_ts)
-    local cweek_th = cserver_startweek[1]
-    local cweekday = cserver_startweek[2]
+end
 
-    local startts = M.add_duration(serverweekstart, {
-        day = (cweek_th - 1) * 7 + (cweekday - 1)
+local parse_week = function(cinfo)
+    local cweek = cinfo.week
+    local sweekstart = M.week_start(startts)
+    local fstm = M.add_duration(sweekstart, {
+        day = cweek.weekday - 1,
+        hour = cweek.hour,
+        min = cweek.min,
+        sec = cweek.sec
     })
-    if startts < server_start_ts then
-        startts = M.add_duration(startts, {
+    if fstm < startts then
+        fstm = M.add_duration(fstm, { day = 7 })
+    end
+    fstm = M.add_duration(fstm, {
+        day = (cweek.startweek - 1) * 7
+    })
+    local fetm = M.add_duration(fstm, cinfo.duration)
+    if os.time() < fetm then
+        return fstm, fetm
+    end
+end
+
+local parse_everyweek = function(cinfo)
+    local nowts = os.time()
+    local cweek = cinfo.everyweek
+    local lastweekstart = M.last_weekstart()
+    local stm = M.add_duration(lastweekstart, {
+        day  = cweek.weekday - 1,
+        hour = cweek.hour,
+        min  = cweek.min,
+        sec  = cweek.sec
+    })
+    local etm = M.add_duration(stm, cinfo.duration)
+
+    for i = 1, 5 do
+        if nowts < etm then
+            break
+        end
+        stm = M.add_duration(stm, {
+            day = 7
+        })
+        etm = M.add_duration(etm, {
             day = 7
         })
     end
-    return get_start_end(cfg, startts, nowts)
+
+    if not cweek.startweek then
+        return stm, etm
+    else
+        local sweekstart = M.week_start(startts)
+        local fstm = M.add_duration(sweekstart, {
+            day = cweek.weekday - 1,
+            hour = cweek.hour,
+            min = cweek.min,
+            sec = cweek.sec
+        })
+        if fstm < startts then
+            fstm = M.add_duration(fstm, { day = 7 })
+        end
+        fstm = M.add_duration(fstm, {
+            day = (cweek.startweek - 1) * 7
+        })
+        local fetm = M.add_duration(fstm, cinfo.duration)
+        if stm >= fstm then
+            return stm, etm
+        else
+            return fstm, fetm
+        end
+    end
 end
 
-local parse_every_week = function(cfg, nowts)
-    if not cfg.duration then
+local parse = function(cinfo)
+    if cinfo.time then
+        return parse_time(cinfo)
+    elseif cinfo.afterstart then
+        return parse_afterstart(cinfo)
+    elseif cinfo.week then
+        return parse_week(cinfo)
+    elseif cinfo.everyweek then
+        return parse_everyweek(cinfo)
+    else
+        print("time parse type err")
         return
     end
+end
 
-    cfg.start = cfg.start or {}
-    local cstart = cfg.start
-    local tm_tb = os.date("*t", nowts)
-    tm_tb.hour = cstart.hour or 0
-    tm_tb.min = cstart.min or 0
-    tm_tb.sec = cstart.sec or 0
-    local todayts = os.time(tm_tb)
-
-    local weekday = tm_tb.wday - 1
-    if 0 == weekday then
-        weekday = 7
-    end
-
-    local efftm = 0
-    if cfg.after_startday then
-        efftm = M.add_duration(server_start_ts, cfg.after_startday)
+M.startendtm = function(ctime)
+    if #ctime == 0 then
+        ctime = { ctime }
     end
 
     local arr = {}
-    for _, cweekday in ipairs(cfg.everyweek) do
-        local startts = M.add_duration(todayts, {
-            day = cweekday - weekday
-        })
-        table.insert(arr, startts)
-    end
-
-    local lastweekstartts = M.add_duration(arr[#arr], {
-        day = -7
-    })
-    local lastweekendts = M.add_duration(lastweekstartts, cfg.duration)
-    if lastweekstartts >= efftm and nowts >= lastweekstartts and nowts < lastweekendts then
-        return lastweekstartts, lastweekendts
-    end
-
-    while true do
-        for i, ts in ipairs(arr) do
-            local startts = ts
-            local endts = M.add_duration(startts, cfg.duration)
-
-            if startts < efftm then
-                goto cont
-            end
-            if nowts < startts then
-                return startts, endts
-            elseif nowts >= startts and nowts < endts then
-                return startts, endts
-            end
-            ::cont::
-            arr[i] = M.add_duration(arr[i], {
-                day = 7
-            })
+    for i = 1, #ctime do
+        local cinfo = ctime[i]
+        if not cinfo.duration then
+            print("parse time err no duration")
+            return
+        end
+        local stm, etm = parse(cinfo)
+        if stm then
+            table.insert(arr, stm)
+            table.insert(arr, etm)
         end
     end
-end
 
---[[
-    get start end timestamp
-]]
-M.start_end = function(cfg, nowts)
-    nowts = nowts or os.time()
-    if cfg.time then
-        return parse_tm(cfg, nowts)
-    end
-    if cfg.server_start then
-        return parse_server_start(cfg, nowts)
-    end
-    if cfg.server_startweek then
-        return parse_server_startweek(cfg, nowts)
-    end
-    if cfg.everyweek then
-        return parse_every_week(cfg, nowts)
-    end
-end
-
-M.start_end_by_lastend = function(cfg, endts, nowts)
-    nowts = nowts or os.time()
-    if cfg.everyweek then
-        return parse_every_week(cfg, nowts)
-    end
-    if not cfg.duration or not cfg.next then
-        return
-    end
-    while true do
-        local startts = M.add_duration(endts, cfg.next)
-        endts = M.add_duration(startts, cfg.duration)
-        if nowts < startts then
-            return startts, endts
-        end
-        if nowts >= startts and nowts < endts then
-            return startts, endts
+    local minstm = math.maxinteger
+    local stm, etm
+    for i = 1, #arr, 2 do
+        local astm = arr[i]
+        local aetm = arr[i + 1]
+        if astm < minstm then
+            minstm = astm
+            stm = astm
+            etm = aetm
         end
     end
-end
-
-M.format = function(ts)
-    return os.date("%Y-%m-%d %H:%M:%S", ts)
+    return stm, etm
 end
 
 return M

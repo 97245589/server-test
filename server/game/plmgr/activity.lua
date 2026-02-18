@@ -11,13 +11,12 @@ local timer = mgrs.timer
 
 local __testactcfg = {
     [100] = {
-        time = { year = 2026, month = 2, day = 13, hour = 6 },
+        time = { year = 2026, month = 2, day = 13 },
         duration = { day = 3 },
     },
     [200] = {
-        server_start = { day = 0 },
+        afterstart = {},
         duration = { day = 3 },
-        next = { day = 3 }
     },
 }
 
@@ -32,52 +31,44 @@ M.init = function(dbdata)
     dbactivity.actdata = dbactivity.actdata or {}
     actimpl.setdb(dbactivity.actdata)
 
-    local tm = os.time()
     local init_one = function(actid, cfg)
         local act = dbacttm[actid]
         if not act then
-            local starttm, endtm = time.start_end(cfg)
+            local starttm, endtm = time.startendtm(cfg)
             if not starttm then
                 return
             end
-            dbacttm[actid] = {
-                id = actid,
-                starttm = starttm,
-                endtm = endtm,
-                isopen = false
-            }
-            act = dbacttm[actid]
-        end
-        if act.endtm and tm >= act.endtm then
+            timer.add(starttm, enums.timer_activity, enums.open, actid)
+        else
             timer.add(act.endtm, enums.timer_activity, enums.close, actid)
-            return
         end
-
-        -- print("actstartend", act.id, time.format(act.starttm), time.format(act.endtm))
-        timer.add(act.starttm, enums.timer_activity, enums.open, actid)
-        timer.add(act.endtm, enums.timer_activity, enums.close, actid)
     end
     for actid, cfg in pairs(__testactcfg) do
         init_one(actid, cfg)
     end
 
-    local ret = {}
-    for actid, act in pairs(dbacttm) do
-        if act.isopen then
-            ret[actid] = act
-        end
-    end
-    rpc.send_all("player", "acttms", ret)
+    rpc.send_all("player", "actopens", dbacttm)
 end
 
 local impl = actimpl.impl
 local actopen = function(actid)
-    local act = dbacttm[actid]
-    if act.isopen then
+    if dbacttm[actid] then
+        print("activity open err", actid)
         return
     end
-    act.isopen = true
-
+    local cfg = __testactcfg[actid]
+    local starttm, endtm = time.startendtm(cfg)
+    if not starttm then
+        print("activity open time err", actid)
+        return
+    end
+    dbacttm[actid] = {
+        id = actid,
+        starttm = starttm,
+        endtm = endtm
+    }
+    timer.add(endtm, enums.timer_activity, enums.close, actid)
+    local act = dbacttm[actid]
     rpc.send_all("player", "actopen", actid, act)
     if impl[actid] then
         impl[actid].open(act)
@@ -88,29 +79,19 @@ local actclose = function(actid)
     local act = dbacttm[actid]
     print("acttm close", actid, act.starttm, act.endtm)
     dbacttm[actid] = nil
-    if act.isopen then
-        rpc.send_all("player", "actclose", actid, act)
-        if impl[actid] then
-            impl[actid].close(act)
-        end
+    rpc.send_all("player", "actclose", actid, act)
+    if impl[actid] then
+        impl[actid].close(act)
     end
     local cfg = __testactcfg[actid]
     if not cfg then
         return
     end
-    local starttm, endtm = time.start_end_by_lastend(cfg, act.endtm)
+    local starttm, endtm = time.startendtm(cfg)
     if not starttm then
         return
     end
-    dbacttm[actid] = {
-        id = actid,
-        starttm = starttm,
-        endtm = endtm,
-        isopen = false
-    }
-
     timer.add(starttm, enums.timer_activity, enums.open, actid)
-    timer.add(endtm, enums.timer_activity, enums.close, actid)
 end
 
 timer.handle[enums.timer_activity] = function(m, actid)

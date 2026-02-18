@@ -6,7 +6,7 @@ local player_mgr = require "server.game.player.player_mgr"
 
 cmds.player_enter = client.player_enter
 
-cmds.acttms = activity.acttms
+cmds.actopens = activity.actopens
 cmds.actopen = activity.actopen
 cmds.actclose = activity.actclose
 

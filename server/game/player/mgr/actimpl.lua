@@ -2,7 +2,7 @@ local cfgf = require "common.func.cfg"
 local taskmgr = require "server.game.player.mgr.taskmgr"
 
 local __testtaskcfg = { [100] = { event = { 1, 10 } } }
-local tasktype_activity = { [100] = __testtaskcfg }
+local tasktype_activity = { [200] = __testtaskcfg }
 local impl = {}
 
 for k, taskcfg in pairs(tasktype_activity) do

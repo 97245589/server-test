@@ -4,10 +4,11 @@ local mgrs = require "server.game.player.mgrs"
 local actimpl = require "server.game.player.mgr.actimpl"
 local players = require "server.game.player.player_mgr".players
 
-local acttm
+local actopens
 local M = {}
 
 local actopen = function(player, pacttm, pactdata, actid, atm)
+    print("actopen ===", actid)
     pacttm[actid] = {
         id = actid,
         starttm = atm.starttm,
@@ -36,13 +37,13 @@ M.init = function(player)
     local pactdata = pactivity.actdata
 
     for actid, ptm in pairs(pacttm) do
-        local atm = acttm[actid]
+        local atm = actopens[actid]
         if not atm or atm.starttm ~= ptm.starttm then
             actclose(player, pacttm, pactdata, actid, ptm)
         end
     end
 
-    for actid, atm in pairs(acttm) do
+    for actid, atm in pairs(actopens) do
         local ptm = pacttm[actid]
         if not ptm then
             actopen(player, pacttm, pactdata, actid, atm)
@@ -50,13 +51,13 @@ M.init = function(player)
     end
 end
 
-M.acttms = function(val)
-    acttm = val
-    -- print("rpc acttms", dump(acttm))
+M.actopens = function(val)
+    actopens = val
+    -- print("rpc actopens", dump(acttm))
 end
 
 M.actopen = function(actid, act)
-    acttm[actid] = act
+    actopens[actid] = act
     -- print("actopen", actid, dump(acttm))
     for playerid, player in pairs(players) do
         if not player.activity then
@@ -75,7 +76,7 @@ end
 
 M.actclose = function(actid, ract)
     -- print("actclose", actid, dump(act))
-    acttm[actid] = nil
+    actopens[actid] = nil
     for playerid, player in pairs(players) do
         if not player.activity then
             goto cont
