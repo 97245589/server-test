@@ -4,5 +4,6 @@ debug_console_port = 10050
 server_name = "test"
 server_mark = server_name
 test = "$TEST"
+port = "$PORT"
 
 thread = 2

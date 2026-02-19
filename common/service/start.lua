@@ -3,6 +3,9 @@ require "common.func.tool"
 local skynet = require "skynet"
 local cmds = require "common.service.cmds"
 
+cmds.exit = function ()
+end
+
 local start = function(func)
     skynet.start(function()
         local SERVICE_NAME = SERVICE_NAME

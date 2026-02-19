@@ -1,6 +1,7 @@
 local require = require
 local pairs = pairs
 local skynet = require "skynet"
+require "skynet.manager"
 require "common.func.tool"
 
 skynet.start(function()
@@ -29,6 +30,13 @@ skynet.start(function()
         skynet.send(addr, "lua", "service_addrs", addrs, service_num)
     end
 
-    -- print("rpc addrs", dump(addrs))
-    skynet.exit()
+    skynet.dispatch("lua", function()
+        print("gameserver start exit")
+        for _, addr in pairs(addrs) do
+            skynet.call(addr, "lua", "exit")
+        end
+        print("gameserver exit succ")
+        skynet.sleep(100)
+        skynet.abort()
+    end)
 end)
