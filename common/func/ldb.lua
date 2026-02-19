@@ -27,8 +27,8 @@ else
 
     return function(cmd, ...)
         if wcmds[cmd] then
-            -- skynet.send(waddr, "lua", cmd, ...)
-            skynet.call(waddr, "lua", cmd, ...)
+            skynet.send(waddr, "lua", cmd, ...)
+            -- skynet.call(waddr, "lua", cmd, ...)
         else
             return skynet.call(raddr, "lua", cmd, ...)
         end

@@ -19,7 +19,7 @@ local __testrankcfg = {
 local timer = mgrs.timer
 
 local M = {}
-local preinfo
+local pres = {}
 local ranks = {}
 
 timer.handle[enums.timer_rank] = function(mark, id)
@@ -29,11 +29,11 @@ timer.handle[enums.timer_rank] = function(mark, id)
         return
     end
     if mark == enums.close then
-        preinfo[id] = preinfo[id] or {}
-        local prearr = preinfo[id]
+        pres[id] = pres[id] or {}
+        local prearr = pres[id]
         local idscorearr, id_order = M.snapshot(id)
         table.insert(prearr, 1, { idscorearr, id_order })
-        if #prearr > 3 then
+        if #prearr > 2 then
             table.remove(prearr)
         end
         ranks[id] = nil
@@ -57,40 +57,10 @@ timer.handle[enums.timer_rank] = function(mark, id)
     end
 end
 
-local init = function()
-    local initdb = function()
-        local dbdata = db("hmget", "plmgr", "rank")[1]
-        if not dbdata then
-            return
-        end
-        dbdata = skynet.unpack(dbdata)
-        preinfo = dbdata.preinfo or {}
-        local dbranks = dbdata.dbranks
-        for id, drank in pairs(dbranks) do
-            M.create(id, drank.starttm, drank.endtm, drank.bin)
-            ::cont::
-        end
-    end
-    initdb()
-    for id, cfg in pairs(__testrankcfg) do
-        if ranks[id] then
-            goto cont
-        end
-        if cfg.permanent then
-            M.create(id)
-        elseif cfg.everyweek then
-            local starttm = time.startendtm(cfg)
-            if starttm then
-                timer.add(starttm, enums.timer_rank, enums.open, id)
-            end
-        end
-        ::cont::
-    end
-end
-
 M.create = function(id, starttm, endtm, bin)
     local cfg = __testrankcfg[id]
     if not cfg or not cfg.num then
+        -- db("hdel", "rank", id, "p" .. id)
         print("rank cfg err no num", id)
         return
     end
@@ -119,25 +89,6 @@ M.del = function(ranktid)
     ranks[ranktid] = nil
 end
 
-M.ticksave = function()
-    -- print("rank tick save ===")
-    local dbdata = {
-        preinfo = preinfo,
-        ranks = {}
-    }
-
-    local dbranks = dbdata.ranks
-    for ranktid, rank in pairs(ranks) do
-        dbranks[ranktid] = {
-            id = rank.id,
-            starttm = rank.starttm,
-            endtm = rank.endtm,
-            bin = rank.core:seri()
-        }
-    end
-    -- db("hmset", "plmgr", "rank", skynet.packstring(dbdata))
-end
-
 M.add = function(ranktid, id, score)
     local rank = ranks[ranktid]
     if not rank then
@@ -153,9 +104,10 @@ M.info = function(ranktid, lb, ub, id)
         print("rank info err", ranktid)
         return
     end
-    local cfg = __testrankcfg[ranktid]
-    lb = lb or 1
-    ub = ub or cfg.num
+    if not lb or not ub then
+        print("shortage of lb or ub", ranktid)
+        return
+    end
     local core = rank.core
     local arr = core:info(lb, ub)
     local order, score = core:order(id)
@@ -165,6 +117,10 @@ M.info = function(ranktid, lb, ub, id)
         order = order,
         score = score
     }
+end
+
+M.pre = function(ranktid)
+    return pres[ranktid]
 end
 
 M.snapshot = function(ranktid, lb, ub)
@@ -185,6 +141,53 @@ M.snapshot = function(ranktid, lb, ub)
     return idscorearr, id_order
 end
 
+M.save = function()
+    -- print("=== rank save")
+    local dbinfo = {
+        pres = pres,
+        ranks = {},
+    }
+    local dbranks = dbinfo.ranks
+    for rankid, rank in pairs(ranks) do
+        dbranks[rankid] = {
+            id = rankid,
+            starttm = rank.starttm,
+            endtm = rank.endtm,
+            bin = rank.core:seri()
+        }
+    end
+    -- db("hset", "plmgr", "rank", skynet.packstring(dbinfo))
+end
+
+local init = function()
+    local dbinfo = db("hget", "plmgr", "rank")
+    if dbinfo then
+    else
+        dbinfo = {}
+    end
+    pres = dbinfo.pres or {}
+    local dbranks = dbinfo.ranks or {}
+    for id, dbrank in pairs(dbranks) do
+        M.create(id, dbrank.starttm, dbrank.endtm, dbrank.bin)
+    end
+
+    for id, cfg in pairs(__testrankcfg) do
+        if ranks[id] then
+            goto cont
+        end
+        if cfg.permanent then
+            M.create(id)
+        elseif cfg.everyweek then
+            local starttm = time.startendtm(cfg)
+            if not starttm then
+                goto cont
+            end
+            timer.add(starttm, enums.timer_rank, enums.open, id)
+        end
+        ::cont::
+    end
+end
 init()
-mgrs.add_mgr(M, mgrs)
+
+mgrs.add_mgr(M, "rank")
 return M

@@ -22,8 +22,17 @@ skynet.start(function()
         end
     end)
     ret = send("list\n")
-    local initaddr = ret:match("(:%x+)%s+snlua%s+server/game/init")
-    print(initaddr)
-    send(string.format('call %s exit\n', initaddr))
+    local addr = ret:match("(:%x+)%s+snlua%s+server/center/init")
+    if not addr then
+        addr = ret:match("(:%x+)%s+snlua%s+server/game/init")
+    end
+    if not addr then
+        print("no matchable addr")
+        skynet.sleep(50)
+        skynet.abort()
+    end
+    print("service addr", addr)
+    send(string.format('call %s exit\n', addr))
+    skynet.sleep(50)
     skynet.abort()
 end)

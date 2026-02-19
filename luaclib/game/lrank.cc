@@ -8,8 +8,9 @@ extern "C" {
 #include <string>
 #include <tuple>
 #include <unordered_map>
-
 using namespace std;
+
+#include "zstdwrap.h"
 
 struct Rank {
   struct Rankele {
@@ -83,7 +84,8 @@ int Lrank::seri(lua_State* L) {
   for (auto& ele : ranks) {
     buff.append((const char*)&ele, sizeof(ele));
   }
-  lua_pushlstring(L, buff.data(), buff.size());
+  string bin = Zstdwrap::compress(buff.data(), buff.size());
+  lua_pushlstring(L, bin.data(), bin.size());
   return 1;
 }
 
@@ -92,9 +94,10 @@ int Lrank::deseri(lua_State* L) {
   Rank& rank = **pp;
   size_t len;
   const char* p = luaL_checklstring(L, 2, &len);
+  string buff = Zstdwrap::decompress(p, len);
 
-  const char* pstart = p;
-  const char* pend = p + len;
+  const char* pstart = buff.data();
+  const char* pend = pstart + buff.size();
   while (pstart < pend) {
     Rank::Rankele ele = *(Rank::Rankele*)pstart;
     rank.add(ele);
