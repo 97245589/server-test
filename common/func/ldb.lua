@@ -4,7 +4,7 @@ local mode = ...
 
 if mode == "child" then
     local print = skynet.error
-    -- del keys hkeys hmset hmget hdel compact
+    -- del keys hkeys hmset hget hmget hdel compact
     skynet.start(function()
         local leveldb = require "lgame.leveldb"
         local pdb = leveldb.create("db/" .. skynet.getenv("server_mark"))
@@ -27,6 +27,7 @@ else
 
     return function(cmd, ...)
         if wcmds[cmd] then
+            -- skynet.send(waddr, "lua", cmd, ...)
             skynet.call(waddr, "lua", cmd, ...)
         else
             return skynet.call(raddr, "lua", cmd, ...)

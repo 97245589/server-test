@@ -43,10 +43,16 @@ timer.handle[enums.timer_rank] = function(mark, id)
         end
     elseif mark == enums.open then
         local starttm, endtm = time.startendtm(cfg)
-        if starttm and endtm then
+        local nowtm = os.time()
+        if not starttm then
+            return
+        end
+        if nowtm < starttm then
+            timer.add(starttm, enums.timer_rank, enums.open, id)
+            return
+        end
+        if nowtm >= starttm and nowtm < endtm then
             M.create(id, starttm, endtm)
-        else
-            print("rank open err tm", id)
         end
     end
 end
@@ -114,7 +120,7 @@ M.del = function(ranktid)
 end
 
 M.ticksave = function()
-    print("rank tick save ===")
+    -- print("rank tick save ===")
     local dbdata = {
         preinfo = preinfo,
         ranks = {}

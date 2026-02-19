@@ -62,21 +62,32 @@ local actopen = function(actid)
         print("activity open time err", actid)
         return
     end
-    dbacttm[actid] = {
-        id = actid,
-        starttm = starttm,
-        endtm = endtm
-    }
-    timer.add(endtm, enums.timer_activity, enums.close, actid)
-    local act = dbacttm[actid]
-    rpc.send_all("player", "actopen", actid, act)
-    if impl[actid] then
-        impl[actid].open(act)
+    local nowtm = os.time()
+    if nowtm < starttm then
+        timer.add(starttm, enums.timer_activity, enums.open, actid)
+        return
     end
-    print("acttm open", actid, act.starttm, act.endtm)
+    if nowtm >= starttm and nowtm < endtm then
+        dbacttm[actid] = {
+            id = actid,
+            starttm = starttm,
+            endtm = endtm
+        }
+        timer.add(endtm, enums.timer_activity, enums.close, actid)
+        local act = dbacttm[actid]
+        rpc.send_all("player", "actopen", actid, act)
+        if impl[actid] then
+            impl[actid].open(act)
+        end
+        print("acttm open", actid, act.starttm, act.endtm)
+    end
 end
 local actclose = function(actid)
     local act = dbacttm[actid]
+    if not act then
+        print("activity close err dont exist", actid)
+        return
+    end
     print("acttm close", actid, act.starttm, act.endtm)
     dbacttm[actid] = nil
     rpc.send_all("player", "actclose", actid, act)

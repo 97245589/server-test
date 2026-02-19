@@ -64,7 +64,7 @@ M.start_tick = function()
         while true do
             local tm = os.time()
             timer.expire(tm)
-            if tm - lastsavetm > 30 then
+            if tm - lastsavetm > 60 then
                 lastsavetm = tm
                 save()
                 for _, func in pairs(ticksave) do

@@ -8,7 +8,7 @@ local actopens
 local M = {}
 
 local actopen = function(player, pacttm, pactdata, actid, atm)
-    print("actopen ===", actid)
+    -- print("actopen ===", actid, player.id)
     pacttm[actid] = {
         id = actid,
         starttm = atm.starttm,
