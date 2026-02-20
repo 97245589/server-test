@@ -4,6 +4,7 @@ require "common.func.tool"
 local pb = function()
     local pbc = require "common.func.protoc"
     local pb = require "pb"
+    pb.option("no_default_values")
 
     pbc:load [[
         syntax = "proto3";
