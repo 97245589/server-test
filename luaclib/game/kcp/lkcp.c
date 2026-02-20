@@ -36,13 +36,16 @@ static int update(lua_State* L) {
   return 0;
 }
 
-static int recv(lua_State* L) {
+static int input(lua_State* L) {
   Lkcp* p = (Lkcp*)luaL_checkudata(L, 1, META);
-
-  size_t slen = 0;
+  size_t slen;
   const char* pstr = luaL_checklstring(L, 2, &slen);
   ikcp_input(p->pkcp, pstr, slen);
+  return 0;
+}
 
+static int recv(lua_State* L) {
+  Lkcp* p = (Lkcp*)luaL_checkudata(L, 1, META);
   char buf[1024 * 100];
   int len = ikcp_recv(p->pkcp, buf, sizeof(buf));
   if (len > 0) {
@@ -57,8 +60,11 @@ static int recv(lua_State* L) {
 
 static void meta(lua_State* L) {
   if (luaL_newmetatable(L, META)) {
-    luaL_Reg l[] = {
-        {"send", send}, {"update", update}, {"recv", recv}, {NULL, NULL}};
+    luaL_Reg l[] = {{"send", send},
+                    {"recv", recv},
+                    {"update", update},
+                    {"input", input},
+                    {NULL, NULL}};
     luaL_newlib(L, l);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, gc);

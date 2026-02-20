@@ -8,14 +8,16 @@ if child then
         local host, kclient
         host = socket.udp(function(str, from)
             -- print("client recv", str, from)
-            kclient:recv(str)
+            kclient:input(str)
+            kclient:update(skynet.now())
         end)
         socket.udp_connect(host, "0.0.0.0", 8765)
         kclient = kcp.client(1, host)
-        for i = 1, 1000 do
-            skynet.sleep(1)
+        for i = 1, 1000, 2 do
             kclient:send(name .. " " .. i)
-            kclient:update(i)
+            kclient:send(name .. " " .. i + 1)
+            kclient:update(skynet.now())
+            skynet.sleep(1)
         end
     end
 
@@ -26,10 +28,8 @@ else
     local server = function()
         local kcps = {}
         local host
-        local i = 0
         host = socket.udp(function(str, from)
             if not kcps[from] then
-                print("fromlen", #from)
                 local kserver = kcp.server(1, host, from)
                 kcps[from] = {
                     kserver = kserver,
@@ -40,16 +40,22 @@ else
             local kcpdata = kcps[from]
             kcpdata.heartbeat = os.time()
             local kserver = kcpdata.kserver
-            local data = kserver:recv(str)
-            print("recv from", socket.udp_address(from), data)
-            kserver:update(i)
-            i = i + 1
+            kserver:input(str)
+            while true do
+                local data = kserver:recv()
+                if data then
+                    print("recv from", socket.udp_address(from), data)
+                else
+                    break
+                end
+            end
+            kserver:update(skynet.now())
         end, "0.0.0.0", 8765)
     end
 
     skynet.start(function()
         skynet.fork(server)
-        for i = 1, 3 do
+        for i = 1, 2 do
             skynet.newservice("server/test/kcp", "child" .. i)
         end
     end)
