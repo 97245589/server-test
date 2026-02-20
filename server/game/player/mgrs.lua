@@ -14,8 +14,6 @@ player_mgr.mgrs = M
 local cfgs = {}
 local inits = {}
 local mgrs = {}
-M.mgrs = mgrs
-M.inits = inits
 
 M.reload_cfg = function(cfgname)
     cfg.reload(cfgname, function(mnames)
@@ -90,13 +88,15 @@ local save_kick = function(tm)
     end
 end
 
-skynet.fork(function()
-    while true do
-        skynet.sleep(100)
-        local tm = os.time()
-        timer.expire(tm)
-        save_kick(tm)
-    end
-end)
+M.start_tick = function()
+    skynet.fork(function()
+        while true do
+            skynet.sleep(100)
+            local tm = os.time()
+            timer.expire(tm)
+            save_kick(tm)
+        end
+    end)
+end
 
 return M
