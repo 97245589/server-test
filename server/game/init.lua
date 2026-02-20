@@ -31,12 +31,17 @@ skynet.start(function()
     end
 
     skynet.dispatch("lua", function()
-        print("gameserver start exit")
-        for _, addr in pairs(addrs) do
-            skynet.call(addr, "lua", "exit")
-        end
-        print("gameserver exit succ")
-        skynet.sleep(100)
-        skynet.abort()
+        skynet.retpack(true)
+        skynet.fork(function()
+            print("gameserver start exit")
+            for _, addr in pairs(addrs) do
+                skynet.call(addr, "lua", "exit")
+            end
+            print("gameserver exit succ waiting db")
+            local db = require "common.func.ldb"
+            db("exit")
+            skynet.sleep(100)
+            skynet.abort()
+        end)
     end)
 end)

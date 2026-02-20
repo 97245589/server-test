@@ -36,7 +36,7 @@ local encode_press = function()
         }
     end
 
-    local n = 1000
+    local n = 500
     local bin
     skynet.sleep(1)
     local t = skynet.now()

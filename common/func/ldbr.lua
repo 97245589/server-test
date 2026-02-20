@@ -8,6 +8,8 @@ skynet.start(function()
         if cmd == "pdb" then
             pdb = ...
             skynet.retpack()
+        elseif cmd == "exit" then
+            skynet.exit()
         else
             -- print("read", cmd, ...)
             skynet.retpack(leveldb[cmd](pdb, ...))

@@ -14,6 +14,12 @@ if mode == "child" then
         skynet.dispatch("lua", function(_, _, cmd, ...)
             if cmd == "raddr" then
                 skynet.retpack(raddr)
+            elseif cmd == "exit" then
+                skynet.send(raddr, "lua", "exit")
+                leveldb.release(pdb)
+                pdb = nil
+                skynet.retpack(true)
+                print("ldb exit")
             else
                 -- print("write", cmd, ...)
                 skynet.retpack(leveldb[cmd](pdb, ...))
@@ -23,7 +29,7 @@ if mode == "child" then
 else
     local waddr = skynet.uniqueservice("common/func/ldb", "child")
     local raddr = skynet.call(waddr, "lua", "raddr")
-    local wcmds = { del = 1, hdel = 1, hmset = 1, compact = 1 }
+    local wcmds = { del = 1, hdel = 1, hmset = 1, compact = 1, exit = 1 }
 
     return function(cmd, ...)
         if wcmds[cmd] then
