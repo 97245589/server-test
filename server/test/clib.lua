@@ -193,6 +193,14 @@ local rank = function()
             ncore:deseri(bin)
         end
         print("deseri", skynet.now() - t, #ncore:info(1, 1000))
+
+        local oinfo = core:info(1, 1000)
+        local ninfo = ncore:info(1, 1000)
+        for i = 1, 2000 do
+            if oinfo[i] ~= ninfo[i] then
+                print("diff", i, oinfo[i], ninfo[i])
+            end
+        end
     end
     press()
 end
@@ -274,7 +282,7 @@ local trie = function()
             ncore = trie.create()
             ncore:deseri(bin)
         end
-        print(skynet.now() - t, #ncore:seri())
+        print(skynet.now() - t, ncore:val(9999))
     end
     press()
 end
