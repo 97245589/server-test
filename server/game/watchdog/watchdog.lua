@@ -5,6 +5,12 @@ require "skynet.manager"
 local cmds = require "common.service.cmds"
 local rpc = require "server.game.rpc"
 
+local exitmark
+cmds.exit = function()
+    exitmark = true
+    print("watchdog exit")
+end
+
 skynet.register("watchdog")
 local gate = skynet.newservice("gate")
 skynet.call(gate, "lua", "open", {
@@ -64,6 +70,9 @@ cmds.close_conn = close_conn
 
 local socket_cmds = {
     open = function(fd, addr)
+        if exitmark then
+            return
+        end
         skynet.send(gate, "lua", "accept", fd)
     end,
     close = function(fd)

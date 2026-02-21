@@ -1,7 +1,7 @@
-local require = require
 local table = table
 local pairs = pairs
 local print = print
+local cmds = require "common.service.cmds"
 local skynet = require "skynet"
 local cfg = require "common.func.cfg"
 local timerf = require "common.func.timer"
@@ -73,11 +73,12 @@ local save_kick = function(tm)
         end
     end
 
-    for i = 1, 5 do
+    for i = 1, 6 do
         if not next(playerids) then
             return
         end
         local playerid = table.remove(playerids)
+        print("save player", playerid)
         local player = players[playerid]
         player_mgr.save_player(player)
         if tm > player.gettm + 10 then
@@ -86,6 +87,16 @@ local save_kick = function(tm)
             client.kick_player(playerid)
         end
     end
+end
+
+cmds.exit = function()
+    playerids = {}
+    for playerid, player in pairs(players) do
+        player_mgr.save_player(player)
+        players[playerid] = nil
+        client.kick_player(playerid)
+    end
+    print("player exit")
 end
 
 M.start_tick = function()

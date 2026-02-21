@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local db = require "common.func.ldb"
 local timerf = require "common.func.timer"
 local time = require "server.game.plmgr.time"
+local cmds = require "common.service.cmds"
 
 local dbdata = {}
 
@@ -45,11 +46,14 @@ M.timer = {
     end
 }
 
-M.start_tick = function()
-    local save = function()
-        -- db("hmset", "plmgr", "data", skynet.packstring(dbdata))
+local save = function()
+    -- db("hmset", "plmgr", "data", skynet.packstring(dbdata))
+    for _, func in pairs(saves) do
+        func()
     end
+end
 
+M.start_tick = function()
     local lastsavetm = os.time()
     skynet.fork(function()
         while true do
@@ -58,13 +62,15 @@ M.start_tick = function()
             if tm - lastsavetm > 60 then
                 lastsavetm = tm
                 save()
-                for _, func in pairs(saves) do
-                    func()
-                end
             end
             skynet.sleep(100)
         end
     end)
+end
+
+cmds.exit = function()
+    save()
+    print("plmgr exit")
 end
 
 return M

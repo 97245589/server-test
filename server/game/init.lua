@@ -38,9 +38,7 @@ skynet.start(function()
                 skynet.call(addr, "lua", "exit")
             end
             print("gameserver exit succ waiting db")
-            local db = require "common.func.ldb"
-            db("exit")
-            skynet.sleep(100)
+            skynet.sleep(1000)
             skynet.abort()
         end)
     end)
