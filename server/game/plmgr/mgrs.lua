@@ -11,12 +11,10 @@ local load = function()
     if bin then
         dbdata = skynet.unpack(bin)
     end
-    dbdata.info = dbdata.info or {}
-    local info = dbdata.info
-    if not info.serverstart_tm then
-        info.serverstart_tm = time.day_start()
+    if not dbdata.serverstart then
+        dbdata.serverstart = time.day_start()
     end
-    time.set_startts(info.serverstart_tm)
+    time.set_startts(dbdata.serverstart)
 end
 load()
 

@@ -3,26 +3,25 @@ local mgrs = require "server.game.plmgr.mgrs"
 local db = require "common.func.ldb"
 
 local gameid = tonumber(skynet.getenv("server_id"))
-local player
+local dbplayer
 local M = {}
 
 M.init = function(dbdata)
     -- print("=== player")
     dbdata.player = dbdata.player or {}
-    player = dbdata.player
+    dbplayer = dbdata.player
 end
 
 M.gen_id = function()
-    local id = gameid << 25 | player.playeridx
-    player.playeridx = player.playeridx + 1
+    local id = gameid << 25 | dbplayer.playeridx
+    dbplayer.playeridx = dbplayer.playeridx + 1
     return id
 end
 
 M.create_player = function(acc)
-    local acc_bin = db("hmget", "acc", acc)[1]
-    local acc_arr
-    if acc_bin then
-        acc_arr = skynet.unpack(acc_bin)
+    local acc_arr = db("hget", "acc", acc)
+    if acc_arr then
+        acc_arr = skynet.unpack(acc_arr)
     else
         acc_arr = {}
     end
@@ -32,13 +31,15 @@ M.create_player = function(acc)
 
     local newid = M.gen_id()
     table.insert(acc_arr, newid)
-    local role = {
-        playerid = newid,
-        acc = acc,
-        name = ""
+    local player = {
+        role = {
+            playerid = newid,
+            acc = acc,
+            name = "hello"
+        }
     }
-    db("hmset", "pl" .. newid, "role", skynet.packstring(role))
-    db("hmset", "acc", acc, skynet.packstring(acc_arr))
+    -- db("hmset", "acc", acc, skynet.packstring(acc_arr))
+    -- db("hmset", "player", newid, skynet.packstring(player))
 end
 
 mgrs.add_mgr(M, "player")
