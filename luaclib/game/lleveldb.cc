@@ -10,12 +10,10 @@ extern "C" {
 using namespace std;
 
 #include "leveldb/db.h"
-#include "leveldb/filter_policy.h"
 #include "leveldb/write_batch.h"
 
 struct Lleveldb {
   leveldb::DB* db_;
-  const leveldb::FilterPolicy* bloom_;
 
   static int create(lua_State*);
   static int release(lua_State*);
@@ -259,7 +257,6 @@ int Lleveldb::create(lua_State* L) {
   options.write_buffer_size = 10 * 1024 * 1024;
   options.max_file_size = 5 * 1024 * 1024;
   options.block_size = 20 * 1024;
-  options.filter_policy = leveldb::NewBloomFilterPolicy(10);
   leveldb::Status status = leveldb::DB::Open(options, {pname, len}, &db);
 
   if (!status.ok()) {
@@ -267,7 +264,6 @@ int Lleveldb::create(lua_State* L) {
   }
   Lleveldb* p = new Lleveldb();
   p->db_ = db;
-  p->bloom_ = options.filter_policy;
   lua_pushlightuserdata(L, p);
   return 1;
 }
@@ -276,7 +272,6 @@ int Lleveldb::release(lua_State* L) {
   if (!lua_islightuserdata(L, 1)) return luaL_error(L, "check lightuserdata");
   Lleveldb* p = (Lleveldb*)lua_touserdata(L, 1);
   delete p->db_;
-  delete p->bloom_;
   delete p;
   return 0;
 }
