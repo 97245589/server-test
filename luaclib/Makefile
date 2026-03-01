@@ -10,7 +10,7 @@ GAMESRC_CCS := $(shell find ./game -name "*.cc")
 GAMESRC_CS := $(shell find ./game -name "*.c")
 GAME_OES := $(GAMESRC_CCS:.cc=.o) $(GAMESRC_CS:.c=.o)
 lgame.so : $(GAME_OES)
-	g++ -o $@ $^ -shared $(3RDFLAG) -lleveldb
+	g++ -o $@ $^ -shared $(3RDFLAG) -lleveldb -s
 
 %.o : %.cc
 	g++ -o $@ -c $< $(CXX_FLAGS) -I$(3RDPATH)
@@ -19,7 +19,7 @@ lgame.so : $(GAME_OES)
 	gcc -o $@ -c $< $(COMMON_FLAGS) -I$(3RDPATH) -I$(SKYNETPATH)
 
 pb.so : pb/pb.c
-	gcc -o $@ $^ -shared $(COMMON_FLAGS)
+	gcc -o $@ $^ -shared $(COMMON_FLAGS) -s
 
 .PHONY : clean
 cleano:
