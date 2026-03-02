@@ -36,37 +36,82 @@ local pb = function()
     local pbc = require "common.func.protoc"
     local pb = require "pb"
     pb.option("no_default_values")
+    pb.option("encode_default_values")
 
     pbc:load [[
         syntax = "proto3";
-
-        message Phone {
-            string name = 1;
-            int64 number = 2;
-            int32 test = 3;
+        enum Cmd {
+            Test_req = 0;
+            Test_res = 1;
         }
 
-        message Person {
-            string name = 1;
-            repeated Phone arr = 2;
-            map<string, Phone> map = 3;
+        message req {
+            Cmd cmd = 1;
+            uint32 session = 2;
+            bytes bin = 3;
+        }
+
+        message res {
+            uint32 session = 1;
+            bytes bin = 2;
+        }
+
+        message push {
+            Cmd cmd = 1;
+            bytes bin = 2;
+        }
+
+        message test_req {
+            int32 test = 1;
+            int32 add = 2;
+        }
+        message test_res {
+            int32 code = 1;
+            int32 test = 2;
         }
     ]]
 
-    local data = {
-        name = "hello",
-        arr = {
-            { name = tostring(1), number = 1 },
-            { name = tostring(2), number = 2 }
-        },
-        map = {
-            [tostring(1)] = { number = 1 },
-            [tostring(2)] = { number = 2 }
-        }
-    }
-    local bin = pb.encode("Person", data)
-    local data2 = pb.decode("Person", bin)
-    print(dump(data2))
+    -- print(pb.enum("Cmd", 0), pb.enum("Cmd", "Test_req"))
+    local session = 0
+    local packreq = function(name, args)
+        session = session + 1
+        if session <= 0 or session > 100 then
+            session = 1
+        end
+        return pb.encode("req", {
+            cmd = name,
+            session = session,
+            bin = pb.encode(string.lower(name), args)
+        })
+    end
+
+    local packpush = function(name, args)
+        return pb.encode("push", {
+            cmd = name,
+            bin = pb.encode(string.lower(name), args)
+        })
+    end
+
+    local packres = function(reqcmd, reqsess, args)
+        local rescmd = pb.enum("Cmd", reqcmd) + 1
+        local name = pb.enum("Cmd", rescmd)
+        -- print("packres", string.lower(name))
+        return pb.encode("res", {
+            session = reqsess,
+            bin = pb.encode(string.lower(name), args)
+        })
+    end
+
+    local bin = packreq("Test_req", { test = 100 })
+    local req = pb.decode("req", bin)
+    local treq = pb.decode(string.lower(req.cmd), req.bin)
+    print("getreq", req.cmd, dump(treq))
+    bin = packres(req.cmd, req.session, {
+        code = 0
+    })
+
+    local res = pb.decode("res", bin)
+    print("getres", dump(pb.decode("test_res", res.bin)))
 end
 
 local leveldb = function()
