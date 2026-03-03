@@ -30,7 +30,7 @@ local CSNUM = 5
 for i = 1, CSNUM do
     table.insert(cses, squeue())
 end
-M.get_player = function(playerid, field)
+M.get_player = function(playerid)
     local player = players[playerid]
     if player then
         return player

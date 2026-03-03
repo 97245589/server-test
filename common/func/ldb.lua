@@ -38,7 +38,7 @@ elseif mode == "read" then
 else
     local waddr = skynet.uniqueservice("common/func/ldb", "write")
     local raddr = skynet.call(waddr, "lua", "raddr")
-    -- del keys hkeys hmset hget hmget hdel compact
+    -- del keys hgetall hmset hget hmget hdel compact
     local wcmds = { del = 1, hdel = 1, hmset = 1, compact = 1 }
 
     return function(cmd, ...)
