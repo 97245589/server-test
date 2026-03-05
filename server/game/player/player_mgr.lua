@@ -7,6 +7,7 @@ local squeue = require "skynet.queue"
 local skynet = require "skynet"
 local seri = require "lgame.seri"
 
+local mgrs
 local players = {}
 local M = {}
 M.players = players
@@ -20,7 +21,7 @@ local dbplayer = function(playerid, field)
     player = {}
     player.id = playerid
     player.online = nil
-    M.mgrs.init_player(player)
+    mgrs.init_player(player)
     players[playerid] = player
     return player
 end
@@ -47,6 +48,10 @@ end
 M.save_player = function(player)
     local id = player.id
     -- db("hmset", "player", id, seri.pack(player))
+end
+
+M.set_mgrs = function(m)
+    mgrs = m
 end
 
 return M

@@ -5,12 +5,12 @@ local impl = {}
 impl[100] = {}
 impl[100].open = function(act)
     -- print("impl activity", dump(act))
-    if not dbactdata[act.id] then
-        dbactdata[act.id] = {}
-    end
-    local aimpl = dbactdata[act.id]
+    local actid = act.id
+    dbactdata[actid] = dbactdata[actid] or {}
+    local data = dbactdata[actid]
 end
 impl[100].close = function(act)
+    dbactdata[act.id] = nil
 end
 
 return {

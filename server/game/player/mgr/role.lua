@@ -8,7 +8,6 @@ M.init = function(player)
     local role = player.role
     -- role.playerid
     -- role.acc
-    -- role.online
     role.level = role.level or 1
 end
 

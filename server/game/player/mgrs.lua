@@ -10,7 +10,7 @@ local player_mgr = require "server.game.player.player_mgr"
 local players = player_mgr.players
 
 local M = {}
-player_mgr.mgrs = M
+player_mgr.set_mgrs(M)
 local cfgs = {}
 local inits = {}
 local mgrs = {}
