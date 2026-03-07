@@ -3,11 +3,15 @@ export PRIIP=`ip route get 1 | awk '{print $7}'`
 # export PUBIP=`curl -s ifconfig.me`
 
 export PORT=10010
-export TEST=""
+export TEST="test"
 export DAEMON=false
-while getopts "dp:s:t:" arg
+export DEBUG="close"
+while getopts "dD:p:s:t:" arg
 do
 	case $arg in
+		D)
+			export DEBUG=$OPTARG
+			;;
 		p)
 			export PORT=$OPTARG
 			;;

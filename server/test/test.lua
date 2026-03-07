@@ -1,4 +1,4 @@
-require "common.func.tool"
+local ftool = require "common.func.tool"
 local skynet = require "skynet"
 
 local cfg = function()
@@ -157,9 +157,30 @@ local leveldb = function()
     end
 end
 
+local tool = function()
+    local clone = ftool.clone
+    local split = ftool.split
+    local tb = {
+        int = 10,
+        float = 10.10,
+        bool = true,
+        arr = { 2, "hello", { [100] = 30 } },
+        map = { [100] = { id = 100 }, [200] = { id = 200, arr = { 10, 20, 30 } } }
+    }
+    print(dump(tb))
+    local ntb = clone(tb)
+    print(tb, ntb, dump(ntb))
+
+    local str = "hello world 1  2 3"
+    print(dump(split(str)))
+    str = "/a/s/d/f//g"
+    print(dump(split(str, '/')))
+end
+
 skynet.start(function()
+    tool()
     -- leveldb()
-    pb()
+    -- pb()
     -- cs()
     -- cfg()
 end)

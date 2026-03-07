@@ -96,6 +96,7 @@ cmds.exit = function()
         players[playerid] = nil
         client.kick_player(playerid)
     end
+    skynet.sleep(100)
     print("player exit")
 end
 

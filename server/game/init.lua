@@ -38,7 +38,7 @@ skynet.start(function()
                 skynet.call(addr, "lua", "exit")
             end
             print("gameserver exit succ waiting db")
-            skynet.sleep(1000)
+            skynet.sleep(300)
             skynet.abort()
         end)
     end)
