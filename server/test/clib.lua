@@ -7,7 +7,6 @@ local encode_press = function()
     local msgpack = require "lgame.msgpack"
     local ltool = require "lgame.tool"
     local sproto = require "sproto"
-    local lseri = require "lgame.seri"
 
     local sp = sproto.parse [[
         .Map {
@@ -36,7 +35,7 @@ local encode_press = function()
         }
     end
 
-    local n = 500
+    local n = 1000
     local bin
     skynet.sleep(1)
     local t = skynet.now()
@@ -55,9 +54,9 @@ local encode_press = function()
     skynet.sleep(1)
     local t = skynet.now()
     for i = 1, n do
-        bin = lseri.pack(obj)
+        bin = msgpack.encode(obj)
     end
-    print("skynetpackopt", skynet.now() - t, #bin)
+    print("msgpack", skynet.now() - t, #bin)
 
     skynet.sleep(1)
     local t = skynet.now()
@@ -68,11 +67,12 @@ local encode_press = function()
     print("zstd compress", skynet.now() - t, #cbin, #ltool.decompress(cbin))
 
     skynet.sleep(1)
+    local nobj
     local t = skynet.now()
     for i = 1, n do
-        bin = msgpack.encode(obj)
+        nobj = msgpack.decode(bin)
     end
-    print("msgpack", skynet.now() - t, #bin)
+    print("msgpack unpack", skynet.now() - t)
 end
 
 local skynetpack = function()
@@ -208,7 +208,6 @@ end
 local msgpack = function()
     print("msgpack test")
     local msgpack = require "lgame.msgpack"
-    local lseri = require "lgame.seri"
 
     local obj = {
         obj = {
@@ -232,7 +231,6 @@ local msgpack = function()
             }
         }
     }
-    print(dump(skynet.unpack(lseri.pack(obj))))
     print(dump(skynet.unpack(skynet.packstring(obj))))
     local bin = msgpack.encode(obj)
     local nobj = msgpack.decode(bin)

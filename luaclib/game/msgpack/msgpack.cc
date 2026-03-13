@@ -1,11 +1,13 @@
 #include "msgpack.h"
+using Pack = Msgpack::Pack;
+using Unpack = Msgpack::Unpack;
 
-void Msgpack::pack_nil() {
+void Pack::pack_nil() {
   uint8_t m = 0xc0;
   write(&m, sizeof(m));
 }
 
-void Msgpack::pack_boolean(bool val) {
+void Pack::pack_boolean(bool val) {
   uint8_t m;
   if (val) {
     m = 0xc3;
@@ -15,7 +17,7 @@ void Msgpack::pack_boolean(bool val) {
   write(&m, sizeof(m));
 }
 
-void Msgpack::pack_integer(int64_t val) {
+void Pack::pack_integer(int64_t val) {
   if (val >= 0) {
     if (val < 128) {
       uint8_t v = val;
@@ -75,14 +77,14 @@ void Msgpack::pack_integer(int64_t val) {
   }
 }
 
-void Msgpack::pack_double(double val) {
+void Pack::pack_double(double val) {
   uint8_t m = 0xcb;
   write(&m, sizeof(m));
   val = endian_change(val);
   write(&val, sizeof(val));
 }
 
-void Msgpack::pack_string(const char* p, uint32_t len) {
+void Pack::pack_string(const char* p, uint32_t len) {
   if (len < 32) {
     uint8_t m = 0xa0 + len;
     write(&m, sizeof(m));
@@ -107,7 +109,7 @@ void Msgpack::pack_string(const char* p, uint32_t len) {
   write((void*)p, len);
 }
 
-void Msgpack::pack_arr_head(uint32_t len) {
+void Pack::pack_arr_head(uint32_t len) {
   if (len < 16) {
     uint8_t m = 0x90 + len;
     write(&m, sizeof(m));
@@ -126,7 +128,7 @@ void Msgpack::pack_arr_head(uint32_t len) {
   }
 }
 
-void Msgpack::pack_map_head(uint32_t len) {
+void Pack::pack_map_head(uint32_t len) {
   if (len < 16) {
     uint8_t m = 0x80 + len;
     write(&m, sizeof(m));
@@ -142,5 +144,193 @@ void Msgpack::pack_map_head(uint32_t len) {
     uint32_t v = len;
     v = endian_change(v);
     write(&v, sizeof(v));
+  }
+}
+
+void Unpack::parse() {
+  int8_t& tp = val_.tp_;
+  auto& data = val_.data_;
+  if (ps_ >= pe_) {
+    tp = ERR;
+    return;
+  }
+  uint8_t m;
+  parselen(ps_, m);
+
+  if (m >= 0x00 && m <= 0x7f) {
+    tp = INT;
+    data.i_ = m;
+    return;
+  }
+  if (m >= 0xe0 && m <= 0xff) {
+    tp = INT;
+    data.i_ = -32 + m - 0xe0;
+    return;
+  }
+  if (m >= 0xa0 && m <= 0xbf) {
+    tp = STR;
+    int len = m - 0xa0;
+    data.s_.p_ = ps_;
+    data.s_.len_ = len;
+    ps_ += len;
+    return;
+  }
+  if (m >= 0x80 && m <= 0x8f) {
+    tp = MAP;
+    data.len_ = m - 0x80;
+    return;
+  }
+  if (m >= 0x90 && m <= 0x9f) {
+    tp = ARR;
+    data.len_ = m - 0x90;
+    return;
+  }
+  switch (m) {
+    case 0xc0: {
+      tp = NIL;
+      return;
+    }
+    case 0xc2: {
+      tp = BOOL;
+      data.b_ = false;
+      return;
+    }
+    case 0xc3: {
+      tp = BOOL;
+      data.b_ = true;
+      return;
+    }
+    case 0xd9:
+    case 0xc4: {
+      tp = STR;
+      uint8_t len;
+      parselen(ps_, len);
+      data.s_.p_ = ps_;
+      data.s_.len_ = len;
+      ps_ += len;
+      return;
+    }
+    case 0xda:
+    case 0xc5: {
+      tp = STR;
+      uint16_t len;
+      parselen(ps_, len);
+      data.s_.p_ = ps_;
+      data.s_.len_ = len;
+      ps_ += len;
+      return;
+    }
+    case 0xdb:
+    case 0xc6: {
+      tp = STR;
+      uint32_t len;
+      parselen(ps_, len);
+      data.s_.p_ = ps_;
+      data.s_.len_ = len;
+      ps_ += len;
+      return;
+    }
+    case 0xca: {
+      tp = DOU;
+      float f;
+      parselen(ps_, f);
+      data.d_ = f;
+      return;
+    }
+    case 0xcb: {
+      tp = DOU;
+      double d;
+      parselen(ps_, d);
+      data.d_ = d;
+      return;
+    }
+    case 0xcc: {
+      tp = INT;
+      uint8_t v;
+      parselen(ps_, v);
+      data.i_ = v;
+      return;
+    }
+    case 0xcd: {
+      tp = INT;
+      uint16_t v;
+      parselen(ps_, v);
+      data.i_ = v;
+      return;
+    }
+    case 0xce: {
+      tp = INT;
+      uint32_t v;
+      parselen(ps_, v);
+      data.i_ = v;
+      return;
+    }
+    case 0xcf: {
+      tp = INT;
+      uint64_t v;
+      parselen(ps_, v);
+      data.i_ = v;
+      return;
+    }
+    case 0xd0: {
+      tp = INT;
+      int8_t v;
+      parselen(ps_, v);
+      data.i_ = v;
+      return;
+    }
+    case 0xd1: {
+      tp = INT;
+      int16_t v;
+      parselen(ps_, v);
+      data.i_ = v;
+      return;
+    }
+    case 0xd2: {
+      tp = INT;
+      int32_t v;
+      parselen(ps_, v);
+      data.i_ = v;
+      return;
+    }
+    case 0xd3: {
+      tp = INT;
+      int64_t v;
+      parselen(ps_, v);
+      data.i_ = v;
+      return;
+    }
+    case 0xdc: {
+      tp = ARR;
+      uint16_t len;
+      parselen(ps_, len);
+      data.len_ = len;
+      return;
+    }
+    case 0xdd: {
+      tp = ARR;
+      uint32_t len;
+      parselen(ps_, len);
+      data.len_ = len;
+      return;
+    }
+    case 0xde: {
+      tp = MAP;
+      uint16_t len;
+      parselen(ps_, len);
+      data.len_ = len;
+      return;
+    }
+    case 0xdf: {
+      tp = MAP;
+      uint32_t len;
+      parselen(ps_, len);
+      data.len_ = len;
+      return;
+    }
+    default: {
+      tp = ERR;
+      return;
+    }
   }
 }
