@@ -1,11 +1,7 @@
 local os = os
-local print = print
-local table = table
-local pairs = pairs
 local db = require "common.func.ldb"
 local squeue = require "skynet.queue"
-local skynet = require "skynet"
-local seri = require "lgame.seri"
+local msgpack = require "lgame.msgpack"
 
 local mgrs
 local players = {}
@@ -17,7 +13,7 @@ local dbplayer = function(playerid, field)
     if player then
         return player
     end
-    local bin = db("hget", "player", playerid)
+    local bin = db.call("hget", "player", playerid)
     player = {}
     player.id = playerid
     player.online = nil
@@ -47,7 +43,7 @@ end
 
 M.save_player = function(player)
     local id = player.id
-    -- db("hmset", "player", id, seri.pack(player))
+    -- db.send("hmset", "player", id, msgpack.encode(player))
 end
 
 M.set_mgrs = function(m)

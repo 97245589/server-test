@@ -8,45 +8,21 @@ if mode == "write" then
         local print = skynet.error
         -- print("ldb write create")
         local pdb = leveldb.create("db/" .. skynet.getenv("server_mark"))
-        local raddr = skynet.newservice("common/func/ldb", "read")
-        skynet.send(raddr, "lua", "pdb", pdb)
-
+        -- ldb.release(pdb)
         skynet.dispatch("lua", function(_, _, cmd, ...)
-            if cmd == "raddr" then
-                skynet.retpack(raddr)
-            else
-                -- print("write", cmd, ...)
-                skynet.retpack(leveldb[cmd](pdb, ...))
-            end
-        end)
-    end)
-elseif mode == "read" then
-    skynet.start(function()
-        local print = skynet.error
-        -- print("ldb read create")
-        local pdb
-        skynet.dispatch("lua", function(_, _, cmd, ...)
-            if cmd == "pdb" then
-                pdb = ...
-                skynet.retpack()
-            else
-                -- print("read", cmd, ...)
-                skynet.retpack(leveldb[cmd](pdb, ...))
-            end
+            skynet.retpack(leveldb[cmd](pdb, ...))
         end)
     end)
 else
-    local waddr = skynet.uniqueservice("common/func/ldb", "write")
-    local raddr = skynet.call(waddr, "lua", "raddr")
-    -- del keys hgetall hmset hget hmget hdel compact
-    local wcmds = { del = 1, hdel = 1, hmset = 1, compact = 1 }
+    local addr = skynet.uniqueservice("common/func/ldb", "write")
 
-    return function(cmd, ...)
-        if wcmds[cmd] then
-            skynet.send(waddr, "lua", cmd, ...)
-            -- skynet.call(waddr, "lua", cmd, ...)
-        else
-            return skynet.call(raddr, "lua", cmd, ...)
+    -- del keys hgetall hmset hget hmget hdel compact
+    return {
+        send = function(cmd, ...)
+            skynet.send(addr, "lua", cmd, ...)
+        end,
+        call = function(cmd, ...)
+            return skynet.call(addr, "lua", cmd, ...)
         end
-    end
+    }
 end

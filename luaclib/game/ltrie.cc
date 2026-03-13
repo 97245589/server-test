@@ -7,7 +7,6 @@ extern "C" {
 using namespace std;
 
 #include "tsl/htrie_map.h"
-#include "zstdwrap.h"
 
 using trie_map = tsl::htrie_map<char, int64_t>;
 static const char* META = "LTRIEMAP";
@@ -19,10 +18,33 @@ struct Ltriemap {
   static int insert(lua_State*);
   static int val(lua_State*);
   static int erase(lua_State*);
+  static int prefix(lua_State*);
   static int seri(lua_State*);
   static int deseri(lua_State*);
   static int dump(lua_State*);
 };
+
+int Ltriemap::prefix(lua_State* L) {
+  trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
+  size_t len;
+  const char* p = luaL_checklstring(L, 2, &len);
+  trie_map& tmap = **pp;
+  int num = luaL_checkinteger(L, 3);
+
+  int c = 0;
+  lua_createtable(L, 0, 0);
+  auto range = tmap.equal_prefix_range({p, len});
+  for (auto it = range.first; it != range.second; ++it) {
+    const string& key = it.key();
+    int64_t v = *it;
+    lua_pushlstring(L, key.data(), key.size());
+    lua_rawseti(L, -2, ++c);
+    lua_pushinteger(L, v);
+    lua_rawseti(L, -2, ++c);
+    if (num > 0 && c / 2 >= num) break;
+  }
+  return 1;
+}
 
 int Ltriemap::dump(lua_State* L) {
   trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
@@ -42,7 +64,7 @@ int Ltriemap::seri(lua_State* L) {
   trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
   trie_map& tmap = **pp;
   string buff;
-
+  buff.reserve(1024);
   for (auto it = tmap.begin(); it != tmap.end(); ++it) {
     const string& key = it.key();
     int64_t v = *it;
@@ -51,8 +73,7 @@ int Ltriemap::seri(lua_State* L) {
     buff.append(key.data(), key.size());
     buff.append((const char*)&v, sizeof(v));
   }
-  string bin = Zstdwrap::compress(buff.data(), buff.size());
-  lua_pushlstring(L, bin.data(), bin.size());
+  lua_pushlstring(L, buff.data(), buff.size());
   return 1;
 }
 
@@ -61,10 +82,9 @@ int Ltriemap::deseri(lua_State* L) {
   trie_map& tmap = **pp;
   size_t len;
   const char* p = luaL_checklstring(L, 2, &len);
-  string buff = Zstdwrap::decompress(p, len);
 
-  const char* pstart = buff.data();
-  const char* pend = pstart + buff.size();
+  char* pstart = (char*)p;
+  char* pend = pstart + len;
   while (pstart < pend) {
     uint32_t len = *(uint32_t*)pstart;
     pstart += sizeof(len);
@@ -117,9 +137,9 @@ int Ltriemap::gc(lua_State* L) {
 
 void Ltriemap::meta(lua_State* L) {
   if (luaL_newmetatable(L, META)) {
-    luaL_Reg l[] = {{"insert", insert}, {"erase", erase},   {"val", val},
-                    {"seri", seri},     {"deseri", deseri}, {"dump", dump},
-                    {NULL, NULL}};
+    luaL_Reg l[] = {{"insert", insert}, {"erase", erase}, {"val", val},
+                    {"prefix", prefix}, {"seri", seri},   {"deseri", deseri},
+                    {"dump", dump},     {NULL, NULL}};
     luaL_newlib(L, l);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, gc);

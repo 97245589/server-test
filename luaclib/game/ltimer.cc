@@ -3,6 +3,7 @@ extern "C" {
 }
 #include <cstdint>
 #include <set>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 using namespace std;
@@ -26,7 +27,7 @@ struct Timer {
     const string& mark = ele.mark_;
     del_mark(id, mark, true);
     auto [it, ok] = info_.insert(ele);
-    id_mark_it_[id][mark] = it;
+    if (ok) id_mark_it_[id][mark] = it;
   }
   void del_id(const int64_t id) {
     auto it = id_mark_it_.find(id);
@@ -64,7 +65,7 @@ struct Ltimer {
   static int del_mark(lua_State*);
   static int del_id(lua_State*);
   static int expire(lua_State*);
-  static int info(lua_State*);
+  static int dump(lua_State*);
 };
 
 int Ltimer::expire(lua_State* L) {
@@ -122,19 +123,22 @@ int Ltimer::add(lua_State* L) {
   return 0;
 }
 
-int Ltimer::info(lua_State* L) {
+int Ltimer::dump(lua_State* L) {
   Timer** pp = (Timer**)luaL_checkudata(L, 1, META);
+  ostringstream oss;
   Timer& timer = **pp;
-  lua_createtable(L, 0, 0);
-  int i = 0;
-  lua_pushinteger(L, timer.info_.size());
-  lua_rawseti(L, -2, ++i);
-  for (auto& [id, val] : timer.id_mark_it_) {
-    lua_pushinteger(L, id);
-    lua_rawseti(L, -2, ++i);
-    lua_pushinteger(L, val.size());
-    lua_rawseti(L, -2, ++i);
+
+  auto& info = timer.info_;
+  oss << "info:" << info.size() << endl;
+  for (auto& v : info) {
+    oss << "tm:" << v.tm_ << " id:" << v.id_ << endl;
   }
+  oss << "idmarkit:" << endl;
+  for (auto& [id, val] : timer.id_mark_it_) {
+    oss << "id:" << id << " sz:" << val.size() << endl;
+  }
+  const string& str = oss.str();
+  lua_pushlstring(L, str.data(), str.size());
   return 1;
 }
 
@@ -148,7 +152,7 @@ void Ltimer::meta(lua_State* L) {
   if (luaL_newmetatable(L, META)) {
     luaL_Reg l[] = {{"add", add},       {"del_mark", del_mark},
                     {"del_id", del_id}, {"expire", expire},
-                    {"info", info},     {NULL, NULL}};
+                    {"dump", dump},     {NULL, NULL}};
     luaL_newlib(L, l);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, gc);

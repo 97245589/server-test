@@ -19,7 +19,7 @@ M.gen_id = function()
 end
 
 M.create_player = function(acc)
-    local acc_arr = db("hget", "acc", acc)
+    local acc_arr = db.call("hget", "acc", acc)
     if acc_arr then
         acc_arr = skynet.unpack(acc_arr)
     else
@@ -38,8 +38,8 @@ M.create_player = function(acc)
             name = "hello"
         }
     }
-    -- db("hmset", "acc", acc, skynet.packstring(acc_arr))
-    -- db("hmset", "player", newid, skynet.packstring(player))
+    -- db.send("hmset", "acc", acc, skynet.packstring(acc_arr))
+    -- db.send("hmset", "player", newid, skynet.packstring(player))
 end
 
 mgrs.add_mgr(M, "player")

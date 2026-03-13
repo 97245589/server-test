@@ -75,44 +75,6 @@ local encode_press = function()
     print("msgpack unpack", skynet.now() - t)
 end
 
-local skynetpack = function()
-    local map = {}
-    for i = 1, 100 do
-        map[i * 10] = {
-            id    = i * 10,
-            level = random(1000),
-            num   = random(10000),
-            hello = random(100000),
-            world = random(1000000)
-        }
-    end
-
-    local obj = {}
-    for i = 1, 50 do
-        obj[i] = map
-    end
-
-    local bin
-    skynet.sleep(1)
-    local t = skynet.now()
-    for i = 1, 1000 do
-        bin = skynet.packstring(obj)
-    end
-    print(skynet.now() - t, #bin)
-
-    skynet.sleep(1)
-    local t = skynet.now()
-    for i = 1, 1000 do
-        local arr = {}
-        for k, v in pairs(obj) do
-            table.insert(arr, k)
-            table.insert(arr, skynet.packstring(v))
-        end
-        bin = skynet.packstring(table.unpack(arr))
-    end
-    print(skynet.now() - t, #bin)
-end
-
 local lru = function()
     print("lru test ===")
     local lru = require "common.func.lru"
@@ -240,6 +202,7 @@ end
 local trie = function()
     print("trie test")
     local trie = require "lgame.trie"
+    local tool = require "lgame.tool"
     local test = function()
         local core = trie.create()
 
@@ -247,13 +210,13 @@ local trie = function()
             core:insert(i, i * 100)
         end
         core:erase(5)
-        core:erase(1)
+        core:erase(2)
         print(core:val(5), core:val(10))
 
         local bin = core:seri()
-        print(#bin)
         local ncore = trie.create()
         ncore:deseri(bin)
+        print(dump(ncore:prefix("1", 0)))
         print(ncore:dump())
     end
     test()
@@ -272,7 +235,7 @@ local trie = function()
         for i = 1, 100 do
             bin = core:seri()
         end
-        print(skynet.now() - t, #bin)
+        print(skynet.now() - t, #bin, #tool.compress(bin))
 
         local t = skynet.now()
         local ncore
@@ -319,7 +282,7 @@ local timer = function()
     -- timer.del_id(2)
     -- timer.del_mark(1, "test1")
     timer.expire(5)
-    print(dump(timer.info()))
+    print(timer.dump())
 end
 
 skynet.start(function()
@@ -330,5 +293,4 @@ skynet.start(function()
     -- msgpack()
     -- trie()
     encode_press()
-    -- skynetpack()
 end)

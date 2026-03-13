@@ -10,8 +10,6 @@ extern "C" {
 #include <unordered_map>
 using namespace std;
 
-#include "zstdwrap.h"
-
 struct Rank {
   struct Rankele {
     int64_t id_;
@@ -41,7 +39,7 @@ struct Rank {
       id_it_.erase(ele.id_);
     }
     auto [it, ok] = ranks_.insert(ele);
-    id_it_.insert({ele.id_, it});
+    if (ok) id_it_.insert({ele.id_, it});
     evict();
   }
 
@@ -80,12 +78,11 @@ int Lrank::seri(lua_State* L) {
 
   auto& ranks = rank.ranks_;
   string buff;
-  buff.reserve(1024 * 2);
+  buff.reserve(1024);
   for (auto& ele : ranks) {
     buff.append((const char*)&ele, sizeof(ele));
   }
-  string bin = Zstdwrap::compress(buff.data(), buff.size());
-  lua_pushlstring(L, bin.data(), bin.size());
+  lua_pushlstring(L, buff.data(), buff.size());
   return 1;
 }
 
@@ -94,10 +91,8 @@ int Lrank::deseri(lua_State* L) {
   Rank& rank = **pp;
   size_t len;
   const char* p = luaL_checklstring(L, 2, &len);
-  string buff = Zstdwrap::decompress(p, len);
-
-  const char* pstart = buff.data();
-  const char* pend = pstart + buff.size();
+  char* pstart = (char*)p;
+  char* pend = pstart + len;
   while (pstart < pend) {
     Rank::Rankele ele = *(Rank::Rankele*)pstart;
     rank.add(ele);

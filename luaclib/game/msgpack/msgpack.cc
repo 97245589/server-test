@@ -170,8 +170,8 @@ void Unpack::parse() {
   if (m >= 0xa0 && m <= 0xbf) {
     tp = STR;
     int len = m - 0xa0;
-    data.s_.p_ = ps_;
-    data.s_.len_ = len;
+    data.s_ = ps_;
+    data.len_ = len;
     ps_ += len;
     return;
   }
@@ -205,8 +205,8 @@ void Unpack::parse() {
       tp = STR;
       uint8_t len;
       parselen(ps_, len);
-      data.s_.p_ = ps_;
-      data.s_.len_ = len;
+      data.s_ = ps_;
+      data.len_ = len;
       ps_ += len;
       return;
     }
@@ -215,8 +215,8 @@ void Unpack::parse() {
       tp = STR;
       uint16_t len;
       parselen(ps_, len);
-      data.s_.p_ = ps_;
-      data.s_.len_ = len;
+      data.s_ = ps_;
+      data.len_ = len;
       ps_ += len;
       return;
     }
@@ -225,8 +225,8 @@ void Unpack::parse() {
       tp = STR;
       uint32_t len;
       parselen(ps_, len);
-      data.s_.p_ = ps_;
-      data.s_.len_ = len;
+      data.s_ = ps_;
+      data.len_ = len;
       ps_ += len;
       return;
     }

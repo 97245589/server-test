@@ -121,40 +121,43 @@ local leveldb = function()
 
     local test = function()
         local db = require "common.func.ldb"
-        db("hmset", 10, "hello10", "world10")
-        db("hmset", 1, "hello", "world", 10, 11, 20, 21)
-        print(db("hget", 1, "hello"), db("hget", 1, 30))
-        printt(db("hgetall", 1))
-        printt(db("hmget", 1, 10, 30, "hello"))
+        local call = db.call
+        call("hmset", 10, "hello10", "world10")
+        call("hmset", 1, "hello", "world", 10, 11, 20, 21)
+        print(call("hget", 1, "hello"), call("hget", 1, 30))
+        printt(call("hgetall", 1))
+        printt(call("hmget", 1, 10, 30, "hello"))
 
-        print("keys", dump(db("keys", "*")))
+        print("keys", dump(call("keys", "*")))
 
-        db("hdel", 1, 10)
-        printt(db("hgetall", 1))
-        db("del", 1)
-        printt(db("hgetall", 1))
-        print("keys", dump(db("keys", "*")))
-        db("del", 10)
-        db("compact")
+        call("hdel", 1, 10)
+        printt(call("hgetall", 1))
+        call("del", 1)
+        printt(call("hgetall", 1))
+        print("keys", dump(call("keys", "*")))
+        call("del", 10)
+        call("compact")
     end
 
     local test1 = function()
         local db = require "common.func.ldb"
+        local call = db.call
         local t = skynet.now()
         for i = 1, 1000000 do
-            db("hmset", "test", "hello" .. i, "world" .. i)
+            call("hmset", "test", "hello" .. i, "world" .. i)
         end
         print(skynet.now() - t)
 
         local t = skynet.now()
         local val
         for i = 1, 1000000 do
-            val = db("hmget", "test", "hello" .. i)
+            val = call("hmget", "test", "hello" .. i)
         end
         print(skynet.now() - t, val[1])
-        db("del", "test")
-        db("compact")
+        call("del", "test")
+        call("compact")
     end
+    test1()
 end
 
 local tool = function()

@@ -1,9 +1,10 @@
 extern "C" {
 #include "lauxlib.h"
 }
-#include <memory>
+#include <iostream>
 
 #include "msgpack.h"
+using namespace std;
 
 struct Unpack {
   lua_State* L;
@@ -33,7 +34,7 @@ void Unpack::unpack() {
       return;
     }
     case Msgpack::Unpack::STR: {
-      lua_pushlstring(L, data.s_.p_, data.s_.len_);
+      lua_pushlstring(L, data.s_, data.len_);
       return;
     }
     case Msgpack::Unpack::ARR: {
@@ -76,7 +77,7 @@ static int decode(lua_State* L) {
 struct Pack {
   lua_State* L;
   Msgpack::Pack pack_;
-  uint32_t dep_;
+  int dep_;
 
   void pack(int index);
   uint32_t table_len(int index);
@@ -95,8 +96,9 @@ uint32_t Pack::table_len(int index) {
 }
 void Pack::pack_table(int index) {
   ++dep_;
+  lua_checkstack(L, 2);
   if (dep_ > 10) {
-    luaL_error(L, "pack dep err");
+    luaL_error(L, "msgpack dep err");
     return;
   }
   if (index < 0) index = lua_gettop(L) + index + 1;
@@ -164,19 +166,12 @@ void Pack::pack(int index) {
 }
 static int encode(lua_State* L) {
   lua_settop(L, 1);
-  std::unique_ptr<Pack> p = std::make_unique<Pack>();
-  p->L = L;
-  p->dep_ = 0;
-  auto& pack = p->pack_;
-  pack.len_ = 0;
-  p->pack(1);
-  lua_pushlstring(L, pack.buf_, pack.len_);
-  if (pack.len_ > sizeof(pack.buf_) - 100 * 1024) {
-    lua_pushboolean(L, true);
-  } else {
-    lua_pushboolean(L, false);
-  }
-  return 2;
+  Pack pack{.L = L, .dep_ = 0};
+  std::string& buff = pack.pack_.buff_;
+  buff.reserve(1024 * 2);
+  pack.pack(1);
+  lua_pushlstring(L, buff.data(), buff.size());
+  return 1;
 }
 
 extern "C" {

@@ -2,7 +2,6 @@
 #define __MSGPACK_H__
 
 #include <cstdint>
-#include <cstring>
 #include <string>
 
 struct Msgpack {
@@ -18,13 +17,8 @@ struct Msgpack {
     return new_val;
   }
   struct Pack {
-    char buf_[1024 * 1024];
-    int len_;
-    void write(void* p, int len) {
-      if (len_ + len >= sizeof(buf_)) return;
-      memcpy(buf_ + len_, p, len);
-      len_ += len;
-    }
+    std::string buff_;
+    void write(void* p, int len) { buff_.append((const char*)p, len); }
     void pack_nil();
     void pack_boolean(bool val);
     void pack_integer(int64_t val);
@@ -41,15 +35,11 @@ struct Msgpack {
       v = endian_change(v);
     }
     struct Val {
-      struct Str {
-        char* p_;
-        uint32_t len_;
-      };
-      union Data {
+      struct Data {
         bool b_;
         int64_t i_;
         double d_;
-        Str s_;
+        char* s_;
         uint32_t len_;
       };
       int8_t tp_;

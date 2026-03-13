@@ -60,7 +60,6 @@ end
 M.create = function(id, starttm, endtm, bin)
     local cfg = __testrankcfg[id]
     if not cfg or not cfg.num then
-        -- db("hdel", "rank", id, "p" .. id)
         print("rank cfg err no num", id)
         return
     end
@@ -156,11 +155,11 @@ M.save = function()
             bin = rank.core:seri()
         }
     end
-    -- db("hset", "plmgr", "rank", skynet.packstring(dbinfo))
+    -- db.send("hset", "plmgr", "rank", skynet.packstring(dbinfo))
 end
 
 local init = function()
-    local dbinfo = db("hget", "plmgr", "rank")
+    local dbinfo = db.call("hget", "plmgr", "rank")
     if dbinfo then
     else
         dbinfo = {}

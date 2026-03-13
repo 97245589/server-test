@@ -7,7 +7,7 @@ local cmds = require "common.service.cmds"
 local dbdata = {}
 
 local load = function()
-    local bin = db("hget", "plmgr", "data")
+    local bin = db.call("hget", "plmgr", "data")
     if bin then
         dbdata = skynet.unpack(bin)
     end
@@ -45,7 +45,7 @@ M.timer = {
 }
 
 local save = function()
-    -- db("hmset", "plmgr", "data", skynet.packstring(dbdata))
+    -- db.send("hmset", "plmgr", "data", skynet.packstring(dbdata))
     for _, func in pairs(saves) do
         func()
     end

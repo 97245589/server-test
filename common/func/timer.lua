@@ -28,8 +28,8 @@ return function(cb)
         end
     end
 
-    M.info = function()
-        return core:info()
+    M.dump = function()
+        return core:dump()
     end
 
     return M
