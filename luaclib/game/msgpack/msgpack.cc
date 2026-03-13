@@ -78,10 +78,18 @@ void Pack::pack_integer(int64_t val) {
 }
 
 void Pack::pack_double(double val) {
-  uint8_t m = 0xcb;
-  write(&m, sizeof(m));
-  val = endian_change(val);
-  write(&val, sizeof(val));
+  float v = val;
+  if ((double)v == val) {
+    uint8_t m = 0xca;
+    write(&m, sizeof(m));
+    v = endian_change(v);
+    write(&v, sizeof(v));
+  } else {
+    uint8_t m = 0xcb;
+    write(&m, sizeof(m));
+    val = endian_change(val);
+    write(&val, sizeof(val));
+  }
 }
 
 void Pack::pack_string(const char* p, uint32_t len) {
