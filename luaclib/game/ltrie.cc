@@ -1,44 +1,82 @@
 extern "C" {
 #include "lauxlib.h"
 }
+
 #include <cstdint>
-#include <sstream>
-#include <string>
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/trie_policy.hpp>
 using namespace std;
 
-#include "tsl/htrie_map.h"
+using Trie =
+    __gnu_pbds::trie<string, int64_t, __gnu_pbds::trie_string_access_traits<>,
+                     __gnu_pbds::pat_trie_tag,
+                     __gnu_pbds::trie_prefix_search_node_update>;
 
-using trie_map = tsl::htrie_map<char, int64_t>;
-static const char* META = "LTRIEMAP";
-struct Ltriemap {
+static const char* META = "LTRIE";
+struct Ltrie {
   static int create(lua_State*);
-  static void meta(lua_State*);
   static int gc(lua_State*);
 
   static int insert(lua_State*);
-  static int val(lua_State*);
   static int erase(lua_State*);
+  static int value(lua_State*);
   static int prefix(lua_State*);
   static int seri(lua_State*);
   static int deseri(lua_State*);
-  static int dump(lua_State*);
 };
 
-int Ltriemap::prefix(lua_State* L) {
-  trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
+int Ltrie::seri(lua_State* L) {
+  Trie** pp = (Trie**)luaL_checkudata(L, 1, META);
+  Trie& trie = **pp;
+
+  string buf;
+  buf.reserve(1024);
+  for (auto& [k, v] : trie) {
+    uint16_t klen = k.size();
+    buf.append((char*)&klen, sizeof(klen));
+    buf.append(k.data(), klen);
+    buf.append((char*)&v, sizeof(v));
+  }
+  lua_pushlstring(L, buf.data(), buf.size());
+  return 1;
+}
+
+int Ltrie::deseri(lua_State* L) {
+  Trie** pp = (Trie**)luaL_checkudata(L, 1, META);
   size_t len;
   const char* p = luaL_checklstring(L, 2, &len);
-  trie_map& tmap = **pp;
+
+  Trie& trie = **pp;
+  char* ps = (char*)p;
+  char* pe = ps + len;
+  while (ps < pe) {
+    uint16_t klen = *(uint16_t*)ps;
+    ps += sizeof(klen);
+    char* pk = ps;
+    ps += klen;
+    int64_t v = *(int64_t*)ps;
+    ps += sizeof(v);
+    trie[{pk, klen}] = v;
+  }
+  return 0;
+}
+
+int Ltrie::prefix(lua_State* L) {
+  Trie** pp = (Trie**)luaL_checkudata(L, 1, META);
+  size_t len;
+  const char* p = luaL_checklstring(L, 2, &len);
   int num = luaL_checkinteger(L, 3);
 
+  Trie& trie = **pp;
+  string pre(p, len);
+  auto pair = trie.prefix_range(pre);
   int c = 0;
   lua_createtable(L, 0, 0);
-  auto range = tmap.equal_prefix_range({p, len});
-  for (auto it = range.first; it != range.second; ++it) {
-    const string& key = it.key();
-    int64_t v = *it;
-    lua_pushlstring(L, key.data(), key.size());
+  for (auto it = pair.first; it != pair.second; ++it) {
+    const string& k = it->first;
+    lua_pushlstring(L, k.data(), k.size());
     lua_rawseti(L, -2, ++c);
+    int64_t v = it->second;
     lua_pushinteger(L, v);
     lua_rawseti(L, -2, ++c);
     if (num > 0 && c / 2 >= num) break;
@@ -46,119 +84,68 @@ int Ltriemap::prefix(lua_State* L) {
   return 1;
 }
 
-int Ltriemap::dump(lua_State* L) {
-  trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
-  trie_map& tmap = **pp;
-  ostringstream oss;
-  oss << "trie dump: " << tmap.size() << endl;
-  for (auto it = tmap.begin(); it != tmap.end(); ++it) {
-    const string& key = it.key();
-    oss << key << ":" << *it << " ";
-  }
-  const string& ret = oss.str();
-  lua_pushlstring(L, ret.data(), ret.size());
+int Ltrie::insert(lua_State* L) {
+  Trie** pp = (Trie**)luaL_checkudata(L, 1, META);
+  size_t klen;
+  const char* pk = luaL_checklstring(L, 2, &klen);
+  if (klen > UINT16_MAX) return luaL_error(L, "trie k too long");
+  int64_t v = luaL_checkinteger(L, 3);
+
+  Trie& trie = **pp;
+  string k(pk, klen);
+  if (trie.find(k) != trie.end()) return 0;
+  trie[k] = v;
   return 1;
 }
 
-int Ltriemap::seri(lua_State* L) {
-  trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
-  trie_map& tmap = **pp;
-  string buff;
-  buff.reserve(1024);
-  for (auto it = tmap.begin(); it != tmap.end(); ++it) {
-    const string& key = it.key();
-    int64_t v = *it;
-    uint32_t len = key.size();
-    buff.append((const char*)&len, sizeof(len));
-    buff.append(key.data(), key.size());
-    buff.append((const char*)&v, sizeof(v));
-  }
-  lua_pushlstring(L, buff.data(), buff.size());
+int Ltrie::erase(lua_State* L) {
+  Trie** pp = (Trie**)luaL_checkudata(L, 1, META);
+  size_t klen;
+  const char* pk = luaL_checklstring(L, 2, &klen);
+  Trie& trie = **pp;
+  string k(pk, klen);
+  trie.erase(k);
+  return 0;
+}
+
+int Ltrie::value(lua_State* L) {
+  Trie** pp = (Trie**)luaL_checkudata(L, 1, META);
+  size_t klen;
+  const char* pk = luaL_checklstring(L, 2, &klen);
+  Trie& trie = **pp;
+  string k(pk, klen);
+  auto it = trie.find(k);
+  if (it == trie.end()) return 0;
+  lua_pushinteger(L, it->second);
   return 1;
 }
 
-int Ltriemap::deseri(lua_State* L) {
-  trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
-  trie_map& tmap = **pp;
-  size_t len;
-  const char* p = luaL_checklstring(L, 2, &len);
-
-  char* pstart = (char*)p;
-  char* pend = pstart + len;
-  while (pstart < pend) {
-    uint32_t len = *(uint32_t*)pstart;
-    pstart += sizeof(len);
-    const char* pstr = pstart;
-    pstart += len;
-    int64_t id = *(int64_t*)pstart;
-    pstart += sizeof(id);
-    tmap.insert({pstr, len}, id);
-  }
-  return 0;
-}
-
-int Ltriemap::val(lua_State* L) {
-  trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
-  trie_map& tmap = **pp;
-  size_t slen;
-  const char* pstr = luaL_checklstring(L, 2, &slen);
-  if (auto it = tmap.find({pstr, slen}); it != tmap.end()) {
-    lua_pushinteger(L, *it);
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
-int Ltriemap::erase(lua_State* L) {
-  trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
-  trie_map& tmap = **pp;
-  size_t slen;
-  const char* pstr = luaL_checklstring(L, 2, &slen);
-  tmap.erase({pstr, slen});
-  return 0;
-}
-
-int Ltriemap::insert(lua_State* L) {
-  trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
-  trie_map& tmap = **pp;
-  size_t slen;
-  const char* pstr = luaL_checklstring(L, 2, &slen);
-  int64_t id = luaL_checkinteger(L, 3);
-  tmap.insert({pstr, slen}, id);
-  return 0;
-}
-
-int Ltriemap::gc(lua_State* L) {
-  trie_map** pp = (trie_map**)luaL_checkudata(L, 1, META);
+int Ltrie::gc(lua_State* L) {
+  Trie** pp = (Trie**)luaL_checkudata(L, 1, META);
   delete *pp;
   return 0;
 }
 
-void Ltriemap::meta(lua_State* L) {
+int Ltrie::create(lua_State* L) {
+  Trie* p = new Trie();
+  Trie** pp = (Trie**)lua_newuserdata(L, sizeof(p));
+  *pp = p;
   if (luaL_newmetatable(L, META)) {
-    luaL_Reg l[] = {{"insert", insert}, {"erase", erase}, {"val", val},
+    luaL_Reg l[] = {{"insert", insert}, {"erase", erase}, {"value", value},
                     {"prefix", prefix}, {"seri", seri},   {"deseri", deseri},
-                    {"dump", dump},     {NULL, NULL}};
+                    {NULL, NULL}};
     luaL_newlib(L, l);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, gc);
     lua_setfield(L, -2, "__gc");
   }
   lua_setmetatable(L, -2);
-}
-
-int Ltriemap::create(lua_State* L) {
-  trie_map* p = new trie_map();
-  trie_map** pp = (trie_map**)lua_newuserdata(L, sizeof(p));
-  *pp = p;
-  meta(L);
   return 1;
 }
 
 extern "C" {
 LUAMOD_API int luaopen_lgame_trie(lua_State* L) {
-  luaL_Reg l[] = {{"create", Ltriemap::create}, {NULL, NULL}};
+  luaL_Reg l[] = {{"create", Ltrie::create}, {NULL, NULL}};
   luaL_newlib(L, l);
   return 1;
 }

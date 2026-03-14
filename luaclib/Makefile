@@ -25,12 +25,9 @@ pb.so : pb/pb.c
 
 .PHONY : clean
 cleano:
-	find . -type f -name "*.o" | xargs rm -f
+	find . -type f \( -name "*.o" -o -name "*.d" \) | xargs rm -f
 
 cleanso:
 	find . -type f -name "*.so" | xargs rm -f
 
-cleand:
-	find . -type f -name "*.d" | xargs rm -f
-
-clean: cleano cleanso cleand
+clean: cleano cleanso

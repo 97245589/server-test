@@ -193,7 +193,6 @@ local msgpack = function()
             }
         }
     }
-    print(dump(skynet.unpack(skynet.packstring(obj))))
     local bin = msgpack.encode(obj)
     local nobj = msgpack.decode(bin)
     print(dump(nobj))
@@ -211,13 +210,13 @@ local trie = function()
         end
         core:erase(5)
         core:erase(2)
-        print(core:val(5), core:val(10))
+        print(core:value(5), core:value(10))
 
         local bin = core:seri()
         local ncore = trie.create()
         ncore:deseri(bin)
         print(dump(ncore:prefix("1", 0)))
-        print(ncore:dump())
+        print(dump(ncore:prefix("", 0)))
     end
     test()
 
@@ -237,13 +236,17 @@ local trie = function()
         end
         print(skynet.now() - t, #bin, #tool.compress(bin))
 
+        skynet.sleep(1)
         local t = skynet.now()
         local ncore
         for i = 1, 100 do
             ncore = trie.create()
             ncore:deseri(bin)
         end
-        print(skynet.now() - t, ncore:val(9999))
+        print(skynet.now() - t, ncore:value(99999))
+        print(dump(ncore:prefix("555", 5)))
+        skynet.sleep(1)
+        collectgarbage("collect")
     end
     press()
 end
@@ -271,17 +274,23 @@ local crc = function()
 end
 
 local timer = function()
-    local func = require "common.func.timer"
-    local timer = func(function(id, ...)
+    local timerf = require "common.func.timer"
+    local timer = timerf(function(id, ...)
         print("expire", id, ...)
     end)
-    timer.add(1, 1, "test1")
-    timer.add(1, 10, "test1")
-    timer.add(2, 3, "test2")
-    timer.add(3, 5, 3)
-    -- timer.del_id(2)
-    -- timer.del_mark(1, "test1")
-    timer.expire(5)
+    for i = 1, 3 do
+        timer.add(10, i, i * 10)
+    end
+    print(timer.dump())
+    for i = 1, 3 do
+        timer.add(20, i, i * 100)
+    end
+    timer.add(10, 5, 30)
+    print(timer.dump())
+    timer.del_mark(10, 20)
+    print(timer.dump())
+    timer.expire(2)
+    timer.del_id(10)
     print(timer.dump())
 end
 

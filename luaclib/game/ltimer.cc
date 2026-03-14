@@ -129,14 +129,16 @@ int Ltimer::dump(lua_State* L) {
   Timer& timer = **pp;
 
   auto& info = timer.info_;
-  oss << "info:" << info.size() << endl;
+  oss << "info:" << info.size() << " ";
   for (auto& v : info) {
-    oss << "tm:" << v.tm_ << " id:" << v.id_ << endl;
+    oss << "tm:" << v.tm_ << ",id:" << v.id_ << " ";
   }
-  oss << "idmarkit:" << endl;
+  oss << endl;
+  oss << "idmarkit ";
   for (auto& [id, val] : timer.id_mark_it_) {
-    oss << "id:" << id << " sz:" << val.size() << endl;
+    oss << "id:" << id << ",sz:" << val.size() << " ";
   }
+  oss << endl;
   const string& str = oss.str();
   lua_pushlstring(L, str.data(), str.size());
   return 1;

@@ -168,7 +168,7 @@ static int encode(lua_State* L) {
   lua_settop(L, 1);
   Pack pack{.L = L, .dep_ = 0};
   std::string& buff = pack.pack_.buff_;
-  buff.reserve(1024 * 2);
+  buff.reserve(1024);
   pack.pack(1);
   lua_pushlstring(L, buff.data(), buff.size());
   return 1;
