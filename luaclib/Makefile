@@ -12,7 +12,7 @@ GAME_OES := $(GAMESRC_CCS:.cc=.o) $(GAMESRC_CS:.c=.o)
 GAME_DEP := $(GAME_OES:.o=.d)
 -include $(GAME_DEP)
 lgame.so : $(GAME_OES)
-	g++ -o $@ $^ -shared $(3RDFLAG) -lleveldb -s
+	g++ -o $@ $^ -shared $(3RDFLAG) -lleveldb -s -flto=auto
 
 %.o : %.cc
 	g++ -o $@ -c $< $(CXX_FLAGS) -I$(3RDPATH)

@@ -7,7 +7,6 @@ extern "C" {
 #include <ext/pb_ds/tree_policy.hpp>
 #include <string>
 #include <tuple>
-#include <unordered_map>
 using namespace std;
 
 struct Rank {
@@ -30,24 +29,27 @@ struct Rank {
                        __gnu_pbds::tree_order_statistics_node_update>;
 
   ordered_set<Rankele> ranks_;
-  unordered_map<int64_t, ordered_set<Rankele>::iterator> id_it_;
+  __gnu_pbds::cc_hash_table<int64_t, ordered_set<Rankele>::iterator> id_it_;
   int32_t max_;
 
-  void add(const Rankele& ele) {
-    if (auto it = id_it_.find(ele.id_); it != id_it_.end()) {
+  int64_t add(const Rankele& ele) {
+    int64_t id = ele.id_;
+    if (auto it = id_it_.find(id); it != id_it_.end()) {
       ranks_.erase(it->second);
-      id_it_.erase(ele.id_);
+      id_it_.erase(id);
     }
     auto [it, ok] = ranks_.insert(ele);
-    if (ok) id_it_.insert({ele.id_, it});
-    evict();
+    if (ok) id_it_[id] = it;
+    return evict();
   }
 
-  void evict() {
-    if (ranks_.size() <= max_) return;
+  int64_t evict() {
+    if (ranks_.size() <= max_) return 0;
     auto lastit = prev(ranks_.end());
-    id_it_.erase(lastit->id_);
+    int64_t id = lastit->id_;
+    id_it_.erase(id);
     ranks_.erase(lastit);
+    return id;
   }
 
   tuple<int32_t, int64_t> get_order(const int64_t id) {
@@ -141,7 +143,11 @@ int Lrank::add(lua_State* L) {
   int64_t id = luaL_checkinteger(L, 2);
   int64_t score = luaL_checkinteger(L, 3);
   int64_t tm = luaL_checkinteger(L, 4);
-  rank.add({.id_ = id, .score_ = score, .tm_ = tm});
+  int64_t evict = rank.add({.id_ = id, .score_ = score, .tm_ = tm});
+  if (evict != 0) {
+    lua_pushinteger(L, evict);
+    return 1;
+  }
   return 0;
 }
 

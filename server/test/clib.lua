@@ -107,8 +107,8 @@ local rank = function()
         for i = 1, 10 do
             core:add(i, i * 10, 0)
         end
-        core:add(7, 200, 0)
-        -- core:add(3, 100, 0)
+        print("evict", core:add(3, 200, 0))
+        core:add(7, 150, 0)
         print(dump(core:info(3, 5)))
         print(dump(core:info(1, 10)))
         print(core:order(1), core:order(8))
