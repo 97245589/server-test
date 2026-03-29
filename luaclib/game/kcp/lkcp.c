@@ -1,20 +1,14 @@
 #include <string.h>
+
 #include "ikcp.h"
 #include "lauxlib.h"
 
 static const char* META = "LKCP";
-#define _addrlen 20
 typedef struct Lkcp {
   ikcpcb* pkcp;
   lua_State* L;
   int id;
 } Lkcp;
-
-static int gc(lua_State* L) {
-  Lkcp* p = (Lkcp*)luaL_checkudata(L, 1, META);
-  ikcp_release(p->pkcp);
-  return 0;
-}
 
 static int send(lua_State* L) {
   Lkcp* p = (Lkcp*)luaL_checkudata(L, 1, META);
@@ -61,6 +55,12 @@ static int outputcb(const char* buf, int len, ikcpcb* kcp, void* user) {
   lua_pushinteger(L, p->id);
   lua_pushlstring(L, buf, len);
   lua_call(L, 2, 0);
+  return 0;
+}
+
+static int gc(lua_State* L) {
+  Lkcp* p = (Lkcp*)luaL_checkudata(L, 1, META);
+  ikcp_release(p->pkcp);
   return 0;
 }
 
