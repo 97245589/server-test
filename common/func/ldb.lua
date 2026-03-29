@@ -3,7 +3,7 @@ local leveldb = require "lgame.leveldb"
 
 local mode = ...
 
-if mode == "write" then
+if mode == "child" then
     skynet.start(function()
         local print = skynet.error
         -- print("ldb write create")
@@ -14,7 +14,7 @@ if mode == "write" then
         end)
     end)
 else
-    local addr = skynet.uniqueservice("common/func/ldb", "write")
+    local addr = skynet.uniqueservice("common/func/ldb", "child")
 
     -- del keys hgetall hmset hget hmget hdel compact
     return {
