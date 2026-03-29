@@ -29,17 +29,17 @@ struct Rank {
                        __gnu_pbds::tree_order_statistics_node_update>;
 
   ordered_set<Rankele> ranks_;
-  __gnu_pbds::cc_hash_table<int64_t, ordered_set<Rankele>::iterator> id_it_;
-  int32_t max_;
+  __gnu_pbds::cc_hash_table<int64_t, ordered_set<Rankele>::iterator> idit_;
+  int max_;
 
   int64_t add(const Rankele& ele) {
     int64_t id = ele.id_;
-    if (auto it = id_it_.find(id); it != id_it_.end()) {
+    if (auto it = idit_.find(id); it != idit_.end()) {
       ranks_.erase(it->second);
-      id_it_.erase(id);
+      idit_.erase(id);
     }
     auto [it, ok] = ranks_.insert(ele);
-    if (ok) id_it_[id] = it;
+    if (ok) idit_[id] = it;
     return evict();
   }
 
@@ -47,14 +47,14 @@ struct Rank {
     if (ranks_.size() <= max_) return 0;
     auto lastit = prev(ranks_.end());
     int64_t id = lastit->id_;
-    id_it_.erase(id);
+    idit_.erase(id);
     ranks_.erase(lastit);
     return id;
   }
 
   tuple<int32_t, int64_t> get_order(const int64_t id) {
-    auto it = id_it_.find(id);
-    if (it == id_it_.end()) return make_tuple(-1, 0);
+    auto it = idit_.find(id);
+    if (it == idit_.end()) return make_tuple(-1, 0);
     auto& val = *it->second;
     int32_t order = ranks_.order_of_key(val) + 1;
     return make_tuple(order, val.score_);

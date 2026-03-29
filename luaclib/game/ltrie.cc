@@ -93,9 +93,8 @@ int Ltrie::insert(lua_State* L) {
 
   Trie& trie = **pp;
   string k(pk, klen);
-  if (trie.find(k) != trie.end()) return 0;
   trie[k] = v;
-  return 1;
+  return 0;
 }
 
 int Ltrie::erase(lua_State* L) {

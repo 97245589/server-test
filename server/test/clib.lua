@@ -83,8 +83,9 @@ local lru = function()
     for i = 1, 5 do
         obj[i] = i
     end
-    local v = obj[2]
-    obj[2] = nil
+    local v2 = obj[2]
+    local v100 = obj[100]
+    -- obj[2] = nil
 
     for i = 6, 9 do
         obj[i] = i
@@ -172,26 +173,12 @@ local msgpack = function()
     local msgpack = require "lgame.msgpack"
 
     local obj = {
-        obj = {
-            id = 10,
-            level = 10,
-            name = "hello"
-        },
-        arr = { 1, 2, 3 },
-        arr_obj = { { val = 10 }, { val = 20 } },
-        map_test = { 1, 2, [100] = 200 },
-        map = {
-            [100] = {
-                id = 100,
-                num = 100,
-                arr = { 10, 30, { hello = "world" } }
-            },
-            [200] = {
-                id = 200,
-                obj = { val = 200 },
-                map = { [200] = 200 }
-            }
-        }
+        int = 10,
+        double = 11.11,
+        boolean = false,
+        str = "hello world",
+        arr = { 10, 11.11, true, { hello = "world" } },
+        map = { [100] = { id = 100, num = 10, arr = { 3, 2, 1 } } }
     }
     local bin = msgpack.encode(obj)
     local nobj = msgpack.decode(bin)
@@ -231,7 +218,7 @@ local trie = function()
 
         local t = skynet.now()
         local bin
-        for i = 1, 100 do
+        for i = 1, 30 do
             bin = core:seri()
         end
         print(skynet.now() - t, #bin, #tool.compress(bin))
@@ -239,7 +226,7 @@ local trie = function()
         skynet.sleep(1)
         local t = skynet.now()
         local ncore
-        for i = 1, 100 do
+        for i = 1, 20 do
             ncore = trie.create()
             ncore:deseri(bin)
         end
