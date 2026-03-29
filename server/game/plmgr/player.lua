@@ -1,6 +1,7 @@
 local skynet = require "skynet"
 local mgrs = require "server.game.plmgr.mgrs"
 local db = require "common.func.ldb"
+local msgpack = require "lgame.msgpack"
 
 local gameid = tonumber(skynet.getenv("server_id"))
 local dbplayer
@@ -38,8 +39,8 @@ M.create_player = function(acc)
             name = "hello"
         }
     }
-    -- db.send("hmset", "acc", acc, skynet.packstring(acc_arr))
-    -- db.send("hmset", "player", newid, skynet.packstring(player))
+    -- db.send("hmset", "acc", acc, msgpack.encode(acc_arr))
+    -- db.send("hmset", "player", newid, msgpack.encode(player))
 end
 
 mgrs.add_mgr(M, "player")

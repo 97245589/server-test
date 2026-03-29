@@ -9,6 +9,7 @@ local db = require "common.func.ldb"
 local cfgf = require "common.func.cfg"
 local lrank = require "lgame.rank"
 local time = require "server.game.plmgr.time"
+local msgpack = require "lgame.msgpack"
 
 local __testrankcfg = {
     [1] = { type = 1, num = 100, permanent = 1 },
@@ -155,7 +156,7 @@ M.save = function()
             bin = rank.core:seri()
         }
     end
-    -- db.send("hset", "plmgr", "rank", skynet.packstring(dbinfo))
+    -- db.send("hset", "plmgr", "rank", msgpack.encode(dbinfo))
 end
 
 local init = function()
