@@ -163,14 +163,15 @@ end
 local tool = function()
     local clone = ftool.clone
     local split = ftool.split
+    local tblen = ftool.tblen
     local tb = {
         int = 10,
         float = 10.10,
         bool = true,
-        arr = { 2, "hello", { [100] = 30 } },
+        arr = { 2, "hello", false },
         map = { [100] = { id = 100 }, [200] = { id = 200, arr = { 10, 20, 30 } } }
     }
-    print(dump(tb))
+    print(tblen(tb), dump(tb))
     local ntb = clone(tb)
     print(tb, ntb, dump(ntb))
 

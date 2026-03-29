@@ -5,6 +5,7 @@ dump = ltool.dump
 
 return {
     clone = ltool.clone,
+    tblen = ltool.tblen,
     split = function(str, sp)
         sp = sp or " "
         if type(sp) == "number" then

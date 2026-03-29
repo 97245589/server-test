@@ -124,7 +124,6 @@ void Encode::encode_table(int index) {
           Encode& encode = *(Encode*)p;
           encode.encode(-2);
           encode.encode(-1);
-          Pack& pack = *(Pack*)p;
         },
         this);
   }

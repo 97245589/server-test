@@ -207,9 +207,24 @@ static int clone(lua_State* L) {
   return 1;
 }
 
+static int tblen(lua_State* L) {
+  if (!lua_istable(L, 1)) return 0;
+  int len = 0;
+  lua_traversal(
+      L, 1,
+      [](void* p) {
+        int& len = *(int*)p;
+        ++len;
+      },
+      &len);
+  lua_pushinteger(L, len);
+  return 1;
+}
+
 extern "C" {
 LUAMOD_API int luaopen_lgame_tool(lua_State* L) {
   luaL_Reg l[] = {{"crc16", crc16},
+                  {"tblen", tblen},
                   {"dump", dump},
                   {"clone", clone},
                   {"compress", zstd_compress},
