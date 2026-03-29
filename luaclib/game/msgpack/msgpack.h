@@ -2,7 +2,7 @@
 #define __MSGPACK_H__
 
 #include <cstdint>
-#include <string>
+#include <cstring>
 
 struct Msgpack {
   template <typename T>
@@ -17,8 +17,13 @@ struct Msgpack {
     return new_val;
   }
   struct Pack {
-    std::string buff_;
-    void write(void* p, int len) { buff_.append((const char*)p, len); }
+    char buff_[1024 * 1024 * 2];
+    int len_;
+    void write(void* p, int len) {
+      if (len_ + len >= sizeof(buff_)) return;
+      memcpy(buff_ + len_, p, len);
+      len_ += len;
+    }
     void pack_nil();
     void pack_boolean(bool val);
     void pack_integer(int64_t val);

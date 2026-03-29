@@ -3,7 +3,7 @@ local db = require "common.func.ldb"
 local timerf = require "common.func.timer"
 local time = require "server.game.plmgr.time"
 local cmds = require "common.service.cmds"
-local msgpack = require "lgame.msgpack"
+local msgpack = require "common.func.msgpack"
 
 local dbdata = {}
 

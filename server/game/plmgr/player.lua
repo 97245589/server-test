@@ -1,7 +1,7 @@
 local skynet = require "skynet"
 local mgrs = require "server.game.plmgr.mgrs"
 local db = require "common.func.ldb"
-local msgpack = require "lgame.msgpack"
+local msgpack = require "common.func.msgpack"
 
 local gameid = tonumber(skynet.getenv("server_id"))
 local dbplayer

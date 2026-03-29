@@ -9,7 +9,7 @@ local db = require "common.func.ldb"
 local cfgf = require "common.func.cfg"
 local lrank = require "lgame.rank"
 local time = require "server.game.plmgr.time"
-local msgpack = require "lgame.msgpack"
+local msgpack = require "common.func.msgpack"
 
 local __testrankcfg = {
     [1] = { type = 1, num = 100, permanent = 1 },

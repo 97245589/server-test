@@ -4,7 +4,7 @@ local skynet = require "skynet"
 
 local encode_press = function()
     print("encode test ===")
-    local msgpack = require "lgame.msgpack"
+    local msgpack = require "common.func.msgpack"
     local ltool = require "lgame.tool"
     local sproto = require "sproto"
 
@@ -170,7 +170,7 @@ end
 
 local msgpack = function()
     print("msgpack test")
-    local msgpack = require "lgame.msgpack"
+    local msgpack = require "common.func.msgpack"
 
     local obj = {
         int = 10,

@@ -1,7 +1,7 @@
 local os = os
 local db = require "common.func.ldb"
 local squeue = require "skynet.queue"
-local msgpack = require "lgame.msgpack"
+local msgpack = require "common.func.msgpack"
 
 local mgrs
 local players = {}
