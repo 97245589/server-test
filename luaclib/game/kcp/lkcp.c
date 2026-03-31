@@ -7,7 +7,6 @@ static const char* META = "LKCP";
 typedef struct Lkcp {
   ikcpcb* pkcp;
   lua_State* L;
-  int id;
 } Lkcp;
 
 static int send(lua_State* L) {
@@ -52,9 +51,8 @@ static int outputcb(const char* buf, int len, ikcpcb* kcp, void* user) {
   Lkcp* p = (Lkcp*)user;
   lua_State* L = p->L;
   lua_getiuservalue(L, 1, 1);
-  lua_pushinteger(L, p->id);
   lua_pushlstring(L, buf, len);
-  lua_call(L, 2, 0);
+  lua_call(L, 1, 0);
   return 0;
 }
 
@@ -65,15 +63,12 @@ static int gc(lua_State* L) {
 }
 
 static int create(lua_State* L) {
-  int conv = luaL_checkinteger(L, 1);
-  int id = luaL_checkinteger(L, 2);
-  luaL_checktype(L, 3, LUA_TFUNCTION);
+  luaL_checktype(L, 1, LUA_TFUNCTION);
   Lkcp* p = (Lkcp*)lua_newuserdatauv(L, sizeof(Lkcp), 1);
-  lua_pushvalue(L, 3);
+  lua_pushvalue(L, 1);
   lua_setiuservalue(L, -2, 1);
-  p->id = id;
 
-  ikcpcb* pkcp = ikcp_create(conv, p);
+  ikcpcb* pkcp = ikcp_create(0x123456, p);
   pkcp->output = outputcb;
   ikcp_nodelay(pkcp, 2, 10, 2, 1);
   p->pkcp = pkcp;

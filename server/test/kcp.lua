@@ -11,7 +11,7 @@ if child then
             core:update(skynet.now())
         end)
         socket.udp_connect(host, "0.0.0.0", 8765)
-        core = lkcp.create(10, 0, function(kid, str)
+        core = lkcp.create(function(str)
             socket.write(host, str)
         end)
         for i = 1, 300, 2 do
@@ -32,7 +32,7 @@ else
         local getkcp = function(from)
             if not from_kcp[from] then
                 local kcp = {
-                    core = lkcp.create(10, 0, function(id, str)
+                    core = lkcp.create(function(str)
                         socket.sendto(host, from, str)
                     end)
                 }
