@@ -10,11 +10,10 @@ if child then
             core:input(str)
             core:update(skynet.now())
         end)
-        local send = function(kid, str)
-            socket.write(host, str)
-        end
         socket.udp_connect(host, "0.0.0.0", 8765)
-        core = lkcp.create(1, host, send)
+        core = lkcp.create(10, 0, function(kid, str)
+            socket.write(host, str)
+        end)
         for i = 1, 300, 2 do
             core:send(name .. " " .. i)
             core:send(name .. " " .. i + 1)
@@ -28,40 +27,16 @@ if child then
 else
     local server = function()
         local from_kcp = {}
-        local kid_kcp = {}
         local host
-        local send = function(kid, str)
-            local kcp = kid_kcp[kid]
-            if kcp then
-                socket.sendto(host, kcp.from, str)
-            end
-        end
-        local delkcp = function(kid)
-            local kcp = kid_kcp[kid]
-            kid_kcp[kid] = nil
-            if kcp then
-                from_kcp[kcp.from] = nil
-            end
-        end
 
-        local id = 0
-        local genid = function()
-            id = id + 1
-            if id > 0xffffff then
-                id = 0
-            end
-            return id
-        end
         local getkcp = function(from)
             if not from_kcp[from] then
-                local kid = genid()
                 local kcp = {
-                    from = from,
-                    id = kid,
-                    core = lkcp.create(1, kid, send)
+                    core = lkcp.create(10, 0, function(id, str)
+                        socket.sendto(host, from, str)
+                    end)
                 }
                 from_kcp[from] = kcp
-                kid_kcp[kid] = kcp
             end
             return from_kcp[from]
         end
