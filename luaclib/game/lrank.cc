@@ -10,29 +10,28 @@ extern "C" {
 using namespace std;
 
 struct Rank {
-  struct Rankele {
+  struct Ele {
     int64_t id_;
     int64_t score_;
     int64_t tm_;
 
-    bool operator<(const Rankele& rhs) const {
+    bool operator<(const Ele& rhs) const {
       if (score_ != rhs.score_) return score_ > rhs.score_;
       if (tm_ != rhs.tm_) return tm_ < rhs.tm_;
       return id_ < rhs.id_;
     }
   };
 
-  template <class T>
-  using ordered_set =
-      __gnu_pbds::tree<T, __gnu_pbds::null_type, less<T>,
+  using Rankset =
+      __gnu_pbds::tree<Ele, __gnu_pbds::null_type, less<Ele>,
                        __gnu_pbds::rb_tree_tag,
                        __gnu_pbds::tree_order_statistics_node_update>;
 
-  ordered_set<Rankele> ranks_;
-  __gnu_pbds::cc_hash_table<int64_t, ordered_set<Rankele>::iterator> idit_;
+  Rankset ranks_;
+  __gnu_pbds::cc_hash_table<int64_t, Rankset::iterator> idit_;
   int max_;
 
-  int64_t add(const Rankele& ele) {
+  int64_t add(const Ele& ele) {
     int64_t id = ele.id_;
     if (auto it = idit_.find(id); it != idit_.end()) {
       ranks_.erase(it->second);
@@ -96,7 +95,7 @@ int Lrank::deseri(lua_State* L) {
   char* pstart = (char*)p;
   char* pend = pstart + len;
   while (pstart < pend) {
-    Rank::Rankele ele = *(Rank::Rankele*)pstart;
+    Rank::Ele ele = *(Rank::Ele*)pstart;
     rank.add(ele);
     pstart += sizeof(ele);
   }
@@ -109,17 +108,16 @@ int Lrank::info(lua_State* L) {
   auto& ranks = rank.ranks_;
   int lb = luaL_checkinteger(L, 2) - 1;
   int ub = luaL_checkinteger(L, 3);
+  if (lb < 0) lb = 0;
   if (ub > ranks.size()) ub = ranks.size();
+  if (lb > ub) return luaL_error(L, "rank info err");
   lua_createtable(L, (ub - lb) * 3, 0);
   int c = 0;
   for (auto it = ranks.find_by_order(lb); it != ranks.find_by_order(ub); ++it) {
-    const auto& id = it->id_;
-    lua_pushinteger(L, id);
+    lua_pushinteger(L, it->id_);
     lua_rawseti(L, -2, ++c);
     lua_pushinteger(L, it->score_);
     lua_rawseti(L, -2, ++c);
-    // lua_pushinteger(L, it->tm_);
-    // lua_rawseti(L, -2, ++c);
   }
   return 1;
 }
