@@ -83,7 +83,7 @@ local save_kick = function(tm)
         player_mgr.save_player(player)
         if tm > player.gettm + 10 then
             players[playerid] = nil
-            timer.del_id(playerid)
+            timer.delid(playerid)
             client.kick_player(playerid)
         end
     end

@@ -265,19 +265,18 @@ local timer = function()
     local timer = timerf(function(id, ...)
         print("expire", id, ...)
     end)
-    for i = 1, 3 do
-        timer.add(10, i, i * 10)
+    for i = 1, 5 do
+        timer.add(1, i, i)
+        timer.add(2, i, i)
     end
+    timer.add(1, 10, 1)
     print(timer.dump())
-    for i = 1, 3 do
-        timer.add(20, i, i * 100)
-    end
-    timer.add(10, 5, 30)
+    timer.delinfo(2, 2)
+    timer.delinfo(1, 3)
     print(timer.dump())
-    timer.del_mark(10, 20)
+    timer.delid(2)
     print(timer.dump())
-    timer.expire(2)
-    timer.del_id(10)
+    timer.expire(5)
     print(timer.dump())
 end
 

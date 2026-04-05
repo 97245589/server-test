@@ -1,92 +1,122 @@
 extern "C" {
 #include "lauxlib.h"
 }
-#include <cstdint>
+#include <iostream>
 #include <set>
 #include <sstream>
 #include <string>
-#include <unordered_map>
 using namespace std;
 
 struct Timer {
   struct Ele {
     int64_t id_;
-    string mark_;
-    uint64_t tm_;
+    int64_t tm_;
+    string info_;
     bool operator<(const Ele& rhs) const {
-      if (tm_ != rhs.tm_) return tm_ < rhs.tm_;
-      if (mark_ != rhs.mark_) return mark_ < rhs.mark_;
-      return id_ < rhs.id_;
+      if (id_ != rhs.id_) return id_ < rhs.id_;
+      return info_ < rhs.info_;
     }
   };
-  set<Ele> info_;
-  unordered_map<int64_t, unordered_map<string, set<Ele>::iterator>> id_mark_it_;
+
+  using miter = set<Ele>::iterator;
+  struct Itercmp {
+    bool operator()(miter lhs, miter rhs) const {
+      if (lhs->tm_ != rhs->tm_) return lhs->tm_ < rhs->tm_;
+      if (lhs->id_ < rhs->id_) return lhs->id_ < rhs->id_;
+      return lhs->info_ < rhs->info_;
+    }
+  };
+
+  set<Ele> timer_;
+  set<miter, Itercmp> iter_;
+
+  void del(const Ele& ele) {
+    if (auto it = timer_.find(ele); it != timer_.end()) {
+      iter_.erase(it);
+      timer_.erase(it);
+    }
+  }
 
   void add(const Ele& ele) {
-    const int64_t id = ele.id_;
-    const string& mark = ele.mark_;
-    del_mark(id, mark, true);
-    auto [it, ok] = info_.insert(ele);
-    if (ok) id_mark_it_[id][mark] = it;
+    del(ele);
+    auto [it, ok] = timer_.insert(ele);
+    if (ok) iter_.insert(it);
   }
-  void del_id(const int64_t id) {
-    auto it = id_mark_it_.find(id);
-    if (it == id_mark_it_.end()) return;
-    auto& mark_it = it->second;
-    for (auto itt = mark_it.begin(); itt != mark_it.end();) {
-      info_.erase(itt->second);
-      itt = mark_it.erase(itt);
-    }
-    id_mark_it_.erase(it);
-  }
-  void del_mark(const int64_t id, const string& mark, bool einfo) {
-    if (auto it = id_mark_it_.find(id); it != id_mark_it_.end()) {
-      auto& mark_it = it->second;
-      if (auto itt = mark_it.find(mark); itt != mark_it.end()) {
-        if (einfo) {
-          info_.erase(itt->second);
-        }
-        mark_it.erase(itt);
-      }
-      if (mark_it.empty()) {
-        id_mark_it_.erase(it);
+
+  void delid(int64_t id) {
+    Ele ele{.id_ = id, .info_ = ""};
+    for (auto it = timer_.lower_bound(ele); it != timer_.end();) {
+      if (it->id_ == id) {
+        iter_.erase(it);
+        it = timer_.erase(it);
+      } else {
+        break;
       }
     }
+  }
+
+  string dump() {
+    ostringstream oss;
+    oss << "timer:" << timer_.size() << " " << iter_.size() << endl;
+    for (auto& ele : timer_) {
+      oss << ele.id_ << "," << ele.tm_ << "," << ele.info_ << " ";
+    }
+    oss << endl;
+    return oss.str();
   }
 };
 
 static const char* META = "LTIMER";
-struct Ltimer {
-  static int create(lua_State*);
-  static void meta(lua_State*);
-  static int gc(lua_State*);
 
-  static int add(lua_State*);
-  static int del_mark(lua_State*);
-  static int del_id(lua_State*);
-  static int expire(lua_State*);
-  static int dump(lua_State*);
-};
-
-int Ltimer::expire(lua_State* L) {
+static int add(lua_State* L) {
   Timer** pp = (Timer**)luaL_checkudata(L, 1, META);
-  Timer& timer = **pp;
-  uint64_t tm = luaL_checkinteger(L, 2);
+  int64_t id = luaL_checkinteger(L, 2);
+  int64_t tm = luaL_checkinteger(L, 3);
+  size_t len;
+  const char* p = luaL_checklstring(L, 4, &len);
 
-  lua_createtable(L, 0, 0);
-  int i = 0;
-  auto& info = timer.info_;
-  for (auto it = info.begin(); it != info.end();) {
-    const auto& ele = *it;
+  Timer& timer = **pp;
+  timer.add({id, tm, {p, len}});
+  return 0;
+}
+
+static int delinfo(lua_State* L) {
+  Timer** pp = (Timer**)luaL_checkudata(L, 1, META);
+  int64_t id = luaL_checkinteger(L, 2);
+  size_t len;
+  const char* p = luaL_checklstring(L, 3, &len);
+
+  Timer& timer = **pp;
+  timer.del({id, 0, {p, len}});
+  return 0;
+}
+
+static int delid(lua_State* L) {
+  Timer** pp = (Timer**)luaL_checkudata(L, 1, META);
+  int64_t id = luaL_checkinteger(L, 2);
+  Timer& timer = **pp;
+  timer.delid(id);
+  return 0;
+}
+
+static int expire(lua_State* L) {
+  Timer** pp = (Timer**)luaL_checkudata(L, 1, META);
+  int64_t tm = luaL_checkinteger(L, 2);
+
+  lua_createtable(L, 32, 0);
+  int c = 0;
+  Timer& timer = **pp;
+  auto& iter_ = timer.iter_;
+  for (auto it = iter_.begin(); it != iter_.end();) {
+    auto& ele = **it;
     if (tm >= ele.tm_) {
-      const int64_t id = ele.id_;
-      const string& mark = ele.mark_;
-      timer.del_mark(id, mark, false);
-      lua_pushinteger(L, id);
-      lua_rawseti(L, -2, ++i);
-      lua_pushlstring(L, mark.data(), mark.size());
-      lua_rawseti(L, -2, ++i);
-      it = info.erase(it);
+      lua_pushinteger(L, ele.id_);
+      lua_rawseti(L, -2, ++c);
+      const string& info = ele.info_;
+      lua_pushlstring(L, info.data(), info.size());
+      lua_rawseti(L, -2, ++c);
+      timer.timer_.erase(*it);
+      it = iter_.erase(it);
     } else {
       break;
     }
@@ -94,86 +124,39 @@ int Ltimer::expire(lua_State* L) {
   return 1;
 }
 
-int Ltimer::del_id(lua_State* L) {
+static int dump(lua_State* L) {
   Timer** pp = (Timer**)luaL_checkudata(L, 1, META);
   Timer& timer = **pp;
-  int64_t id = luaL_checkinteger(L, 2);
-  timer.del_id(id);
-  return 0;
-}
-
-int Ltimer::del_mark(lua_State* L) {
-  Timer** pp = (Timer**)luaL_checkudata(L, 1, META);
-  Timer& timer = **pp;
-  int64_t id = luaL_checkinteger(L, 2);
-  size_t mlen;
-  const char* pm = luaL_checklstring(L, 3, &mlen);
-  timer.del_mark(id, {pm, mlen}, true);
-  return 0;
-}
-
-int Ltimer::add(lua_State* L) {
-  Timer** pp = (Timer**)luaL_checkudata(L, 1, META);
-  Timer& timer = **pp;
-  int64_t id = luaL_checkinteger(L, 2);
-  uint64_t tm = luaL_checkinteger(L, 3);
-  size_t mlen;
-  const char* pm = luaL_checklstring(L, 4, &mlen);
-  timer.add({.id_ = id, .mark_ = {pm, mlen}, .tm_ = tm});
-  return 0;
-}
-
-int Ltimer::dump(lua_State* L) {
-  Timer** pp = (Timer**)luaL_checkudata(L, 1, META);
-  ostringstream oss;
-  Timer& timer = **pp;
-
-  auto& info = timer.info_;
-  oss << "info:" << info.size() << " ";
-  for (auto& v : info) {
-    oss << "tm:" << v.tm_ << ",id:" << v.id_ << " ";
-  }
-  oss << endl;
-  oss << "idmarkit ";
-  for (auto& [id, val] : timer.id_mark_it_) {
-    oss << "id:" << id << ",sz:" << val.size() << " ";
-  }
-  oss << endl;
-  const string& str = oss.str();
-  lua_pushlstring(L, str.data(), str.size());
+  string ret = timer.dump();
+  lua_pushlstring(L, ret.data(), ret.size());
   return 1;
 }
 
-int Ltimer::gc(lua_State* L) {
+static int gc(lua_State* L) {
   Timer** pp = (Timer**)luaL_checkudata(L, 1, META);
   delete *pp;
   return 0;
 }
 
-void Ltimer::meta(lua_State* L) {
-  if (luaL_newmetatable(L, META)) {
-    luaL_Reg l[] = {{"add", add},       {"del_mark", del_mark},
-                    {"del_id", del_id}, {"expire", expire},
-                    {"dump", dump},     {NULL, NULL}};
-    luaL_newlib(L, l);
-    lua_setfield(L, -2, "__index");
-    lua_pushcfunction(L, gc);
-    lua_setfield(L, -2, "__gc");
-  }
-  lua_setmetatable(L, -2);
-}
-
-int Ltimer::create(lua_State* L) {
+static int create(lua_State* L) {
   Timer* p = new Timer();
   Timer** pp = (Timer**)lua_newuserdata(L, sizeof(p));
   *pp = p;
-  meta(L);
+  if (luaL_newmetatable(L, META)) {
+    luaL_Reg l[] = {{"add", add},       {"delinfo", delinfo}, {"delid", delid},
+                    {"expire", expire}, {"dump", dump},       {NULL, NULL}};
+    luaL_newlib(L, l);
+    lua_setfield(L, -2, "__index");
+    lua_pushcfunction(L, gc);
+    lua_setfield(L, 2, "__gc");
+  }
+  lua_setmetatable(L, -2);
   return 1;
 }
 
 extern "C" {
 LUAMOD_API int luaopen_lgame_timer(lua_State* L) {
-  luaL_Reg l[] = {{"create", Ltimer::create}, {NULL, NULL}};
+  luaL_Reg l[] = {{"create", create}, {NULL, NULL}};
   luaL_newlib(L, l);
   return 1;
 }

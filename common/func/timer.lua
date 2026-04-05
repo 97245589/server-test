@@ -11,12 +11,12 @@ return function(cb)
         core:add(id, tm, skynet.packstring(cmd, ...))
     end
 
-    M.del_id = function(id)
-        core:del_id(id)
+    M.delid = function(id)
+        core:delid(id)
     end
 
-    M.del_mark = function(id, cmd, ...)
-        core:del_mark(id, skynet.packstring(cmd, ...))
+    M.delinfo = function(id, cmd, ...)
+        core:delinfo(id, skynet.packstring(cmd, ...))
     end
 
     M.expire = function(tm)
