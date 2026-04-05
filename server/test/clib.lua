@@ -271,13 +271,20 @@ local timer = function()
     end
     timer.add(1, 10, 1)
     print(timer.dump())
-    timer.delinfo(2, 2)
-    timer.delinfo(1, 3)
+    timer.del(2, 2)
+    timer.del(1, 3)
     print(timer.dump())
     timer.delid(2)
     print(timer.dump())
     timer.expire(5)
     print(timer.dump())
+
+    local t = skynet.now()
+    for i = 1, 1000000 do
+        timer.add(10, i, i)
+    end
+    timer.delid(10)
+    print(skynet.now() - t)
 end
 
 skynet.start(function()

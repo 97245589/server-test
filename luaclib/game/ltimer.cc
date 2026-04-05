@@ -22,7 +22,7 @@ struct Timer {
   struct Itercmp {
     bool operator()(miter lhs, miter rhs) const {
       if (lhs->tm_ != rhs->tm_) return lhs->tm_ < rhs->tm_;
-      if (lhs->id_ < rhs->id_) return lhs->id_ < rhs->id_;
+      if (lhs->id_ != rhs->id_) return lhs->id_ < rhs->id_;
       return lhs->info_ < rhs->info_;
     }
   };
@@ -31,10 +31,10 @@ struct Timer {
   set<miter, Itercmp> iter_;
 
   void del(const Ele& ele) {
-    if (auto it = timer_.find(ele); it != timer_.end()) {
-      iter_.erase(it);
-      timer_.erase(it);
-    }
+    auto it = timer_.find(ele);
+    if (it == timer_.end()) return;
+    iter_.erase(it);
+    timer_.erase(it);
   }
 
   void add(const Ele& ele) {
@@ -44,7 +44,7 @@ struct Timer {
   }
 
   void delid(int64_t id) {
-    Ele ele{.id_ = id, .info_ = ""};
+    Ele ele{.id_ = id};
     for (auto it = timer_.lower_bound(ele); it != timer_.end();) {
       if (it->id_ == id) {
         iter_.erase(it);
@@ -80,7 +80,7 @@ static int add(lua_State* L) {
   return 0;
 }
 
-static int delinfo(lua_State* L) {
+static int del(lua_State* L) {
   Timer** pp = (Timer**)luaL_checkudata(L, 1, META);
   int64_t id = luaL_checkinteger(L, 2);
   size_t len;
@@ -143,8 +143,8 @@ static int create(lua_State* L) {
   Timer** pp = (Timer**)lua_newuserdata(L, sizeof(p));
   *pp = p;
   if (luaL_newmetatable(L, META)) {
-    luaL_Reg l[] = {{"add", add},       {"delinfo", delinfo}, {"delid", delid},
-                    {"expire", expire}, {"dump", dump},       {NULL, NULL}};
+    luaL_Reg l[] = {{"add", add},       {"del", del},   {"delid", delid},
+                    {"expire", expire}, {"dump", dump}, {NULL, NULL}};
     luaL_newlib(L, l);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, gc);

@@ -15,8 +15,8 @@ return function(cb)
         core:delid(id)
     end
 
-    M.delinfo = function(id, cmd, ...)
-        core:delinfo(id, skynet.packstring(cmd, ...))
+    M.del = function(id, cmd, ...)
+        core:del(id, skynet.packstring(cmd, ...))
     end
 
     M.expire = function(tm)
