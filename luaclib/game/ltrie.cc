@@ -71,7 +71,7 @@ int Ltrie::prefix(lua_State* L) {
   string pre(p, len);
   auto pair = trie.prefix_range(pre);
   int c = 0;
-  lua_createtable(L, 0, 0);
+  lua_createtable(L, 16, 0);
   for (auto it = pair.first; it != pair.second; ++it) {
     const string& k = it->first;
     lua_pushlstring(L, k.data(), k.size());

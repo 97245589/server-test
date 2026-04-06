@@ -73,7 +73,7 @@ int Lleveldb::hgetall(lua_State* L) {
   const char* ps = luaL_checklstring(L, 2, &len);
   string str(ps, len);
 
-  lua_createtable(L, 0, 0);
+  lua_createtable(L, 16, 0);
   int i = 0;
   search_key(db, str,
              [&](const string& key, const string& val, const string& realkey) {

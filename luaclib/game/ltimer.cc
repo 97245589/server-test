@@ -103,7 +103,7 @@ static int expire(lua_State* L) {
   Timer** pp = (Timer**)luaL_checkudata(L, 1, META);
   int64_t tm = luaL_checkinteger(L, 2);
 
-  lua_createtable(L, 32, 0);
+  lua_createtable(L, 16, 0);
   int c = 0;
   Timer& timer = **pp;
   auto& iter_ = timer.iter_;

@@ -169,7 +169,7 @@ void Clone::clonetable(int idx) {
     return;
   }
   if (idx < 0) idx = lua_gettop(L) + idx + 1;
-  lua_createtable(L, 0, 0);
+  lua_createtable(L, 8, 8);
   int nidx = lua_gettop(L);
   lua_checkstack(L, 4);
   lua_pushnil(L);
