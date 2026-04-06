@@ -143,17 +143,17 @@ local leveldb = function()
         local db = require "common.func.ldb"
         local call = db.call
         local t = skynet.now()
-        for i = 1, 1000000 do
+        for i = 1, 200000 do
             call("hmset", "test", "hello" .. i, "world" .. i)
         end
         print(skynet.now() - t)
 
         local t = skynet.now()
         local val
-        for i = 1, 1000000 do
-            val = call("hmget", "test", "hello" .. i)
+        for i = 1, 200000 do
+            val = call("hget", "test", "hello" .. i)
         end
-        print(skynet.now() - t, val[1])
+        print(skynet.now() - t, val)
         call("del", "test")
         call("compact")
     end

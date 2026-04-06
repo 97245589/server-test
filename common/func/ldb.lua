@@ -6,9 +6,11 @@ local mode = ...
 if mode == "child" then
     skynet.start(function()
         local print = skynet.error
-        -- print("ldb write create")
+
         local pdb = leveldb.create("db/" .. skynet.getenv("server_mark"))
+
         -- ldb.release(pdb)
+
         skynet.dispatch("lua", function(_, _, cmd, ...)
             skynet.retpack(leveldb[cmd](pdb, ...))
         end)
