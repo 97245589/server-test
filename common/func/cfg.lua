@@ -35,13 +35,9 @@ M.get = function(cfgname)
     end
 end
 
-M.reload = function(cfgname, func)
+M.reload = function(cfgname)
     cfgs[cfgname] = M.loadf(cfgname)
-
-    local mnames = cfg_mgr[cfgname]
-    if func and mnames then
-        func(mnames)
-    end
+    return cfg_mgr[cfgname]
 end
 
 return M

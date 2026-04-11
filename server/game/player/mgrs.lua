@@ -11,20 +11,29 @@ local players = player_mgr.players
 
 local M = {}
 player_mgr.set_mgrs(M)
-local cfgs = {}
 local inits = {}
 local mgrs = {}
 
 M.reload_cfg = function(cfgname)
-    cfg.reload(cfgname, function(mnames)
-        for name in pairs(mnames) do
-            cfgs[name]()
+    local mnames = cfg.reload(cfgname)
+    if not mnames then
+        return
+    end
+    for name in pairs(mnames) do
+        local mgr = mgrs[name]
+        if not mgr then
+            goto cont
         end
-    end)
+        local cfgfunc = mgr.cfg
+        if not cfgfunc then
+            goto cont
+        end
+        cfgfunc()
+        ::cont::
+    end
 end
 
-M.add_mgr = function(mgr, name, initlevel)
-    initlevel = initlevel or 1
+M.add_mgr = function(mgr, name)
     if mgrs[name] then
         print("err mgrname repeated", name)
         return
@@ -35,7 +44,6 @@ M.add_mgr = function(mgr, name, initlevel)
     end
 
     if mgr.cfg then
-        cfgs[name] = mgr.cfg
         cfg.cfg_func(name, mgr.cfg)
     end
 end
